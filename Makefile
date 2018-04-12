@@ -1,8 +1,8 @@
 CC=gcc
 
 SRC_DIR := ./src
-EXEC_CLIENT := ./bin/client
-EXEC_SERVER := ./bin/server
+EXEC_CLIENT := ./bin/client.exec
+EXEC_SERVER := ./bin/server.exec
 INC_DIR := ./headers
 OBJ_DIR := ./obj
 
