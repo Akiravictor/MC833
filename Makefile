@@ -22,9 +22,12 @@ OBJECTS_COMMON= $(SOURCES_COMMON:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 all: client server
 client: $(EXEC_CLIENT)
 server: $(EXEC_SERVER)
-run_server:
+run_server: server
 	$(EXEC_SERVER)
-run_client:
+run_client: client
+	$(EXEC_CLIENT)
+run: client server
+	$(EXEC_SERVER)
 	$(EXEC_CLIENT)
 
 $(EXEC_CLIENT): $(OBJECTS_CLIENT) $(OBJECTS_COMMON)
