@@ -6,9 +6,9 @@ EXEC_SERVER := ./bin/server.exec
 INC_DIR := ./headers
 OBJ_DIR := ./obj
 
-CFLAGS=-c -Wall
+CFLAGS=-c -std=c99 -pedantic -Wall -m64
 INC_FLAGS := -I$(INC_DIR)
-LDFLAGS=
+LDFLAGS:=
 
 SOURCES_CLIENT= $(shell find $(SRC_DIR) -name client*.c)
 OBJECTS_CLIENT= $(SOURCES_CLIENT:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
@@ -16,20 +16,30 @@ OBJECTS_CLIENT= $(SOURCES_CLIENT:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 SOURCES_SERVER= $(shell find $(SRC_DIR) -name server*.c)
 OBJECTS_SERVER= $(SOURCES_SERVER:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
+SOURCES_COMMON= $(shell find $(SRC_DIR) -name common*.c)
+OBJECTS_COMMON= $(SOURCES_COMMON:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+
 all: client server
 client: $(EXEC_CLIENT)
 server: $(EXEC_SERVER)
+run_server:
+	$(EXEC_SERVER)
+run_client:
+	$(EXEC_CLIENT)
 
-$(EXEC_CLIENT): $(OBJECTS_CLIENT)
-	$(CC) $(LDFLAGS) $(OBJECTS_CLIENT) -o $@
+$(EXEC_CLIENT): $(OBJECTS_CLIENT) $(OBJECTS_COMMON)
+	$(CC) $(LDFLAGS) $(OBJECTS_CLIENT) $(OBJECTS_COMMON) -o $@
 
-$(EXEC_SERVER): $(OBJECTS_SERVER)
-	$(CC) $(LDFLAGS) $(OBJECTS_SERVER) -o $@
+$(EXEC_SERVER): $(OBJECTS_SERVER) $(OBJECTS_COMMON)
+	$(CC) $(LDFLAGS) $(OBJECTS_SERVER) $(OBJECTS_COMMON) -o $@
 
 $(OBJECTS_CLIENT): $(OBJ_DIR)/client%.o : $(SRC_DIR)/client%.c
 	@$(CC) $(INC_FLAGS) $(CFLAGS) $< -o $@
 
 $(OBJECTS_SERVER): $(OBJ_DIR)/server%.o : $(SRC_DIR)/server%.c
+	@$(CC) $(INC_FLAGS) $(CFLAGS) $< -o $@
+
+$(OBJECTS_COMMON): $(OBJ_DIR)/common%.o : $(SRC_DIR)/common%.c
 	@$(CC) $(INC_FLAGS) $(CFLAGS) $< -o $@
 
 clean:
