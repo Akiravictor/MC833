@@ -6,7 +6,7 @@ EXEC_SERVER := ./bin/server.exec
 INC_DIR := ./headers
 OBJ_DIR := ./obj
 
-CFLAGS=-c -std=c99 -pedantic -Wall -m64
+CFLAGS=-c  -pedantic -Wall -m64
 INC_FLAGS := -I$(INC_DIR)
 LDFLAGS:=
 
@@ -20,8 +20,8 @@ SOURCES_COMMON= $(shell find $(SRC_DIR) -name common*.c)
 OBJECTS_COMMON= $(SOURCES_COMMON:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 all: client server
-client: $(EXEC_CLIENT)
-server: $(EXEC_SERVER)
+client: makedir $(EXEC_CLIENT) 
+server: makedir $(EXEC_SERVER) 
 run_server: server
 	$(EXEC_SERVER)
 run_client: client
@@ -29,6 +29,9 @@ run_client: client
 run: client server
 	$(EXEC_SERVER)
 	$(EXEC_CLIENT)
+
+makedir:
+	mkdir -p obj bin
 
 $(EXEC_CLIENT): $(OBJECTS_CLIENT) $(OBJECTS_COMMON)
 	$(CC) $(LDFLAGS) $(OBJECTS_CLIENT) $(OBJECTS_COMMON) -o $@
@@ -46,5 +49,5 @@ $(OBJECTS_COMMON): $(OBJ_DIR)/common%.o : $(SRC_DIR)/common%.c
 	@$(CC) $(INC_FLAGS) $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf $(EXEC_CLIENT)  $(OBJECTS_CLIENT) $(EXEC_SERVER) $(OBJECTS_SERVER)
+	rm -rf $(EXEC_CLIENT)  $(OBJECTS_CLIENT) $(EXEC_SERVER) $(OBJECTS_SERVER) $(OBJECTS_COMMON)
 	find . -iname *~ -exec rm -rf {} \;
