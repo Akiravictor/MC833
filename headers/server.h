@@ -14,6 +14,9 @@ typedef struct messages{
   char *prof;
   char *student;
   char *ask_code;
+  char *ask_msg;
+  char *ask_room;
+  char *ask_hours;
 }messages;
 
 /* Headers */

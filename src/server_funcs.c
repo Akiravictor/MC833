@@ -30,10 +30,25 @@ messages messages_constructor(){
 
   char prof[] = "Welcome, professor!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Change message of a specific discipline [change]\n> Add discipline [add]\n> Delete discipline [delete]\n> Close connection [exit]\n\n";
   char ask_code[] = "Please enter the discipline code, e.g. 'MC833'\n";
+  char ask_msg[] = "Please enter the new message\n";
+  char ask_room[] = "Please enter the classrom info, e.g. 'CB 15'\n";
+  char ask_hours[] = "Please enter the class hours, e.g. 'ter 10am'\n";
+  
+  /* ask for d room */
+  obj.ask_room = malloc(strlen(ask_room)*sizeof(char));
+  strcpy(obj.ask_room,ask_room);
+
+  /* ask for d hours */
+  obj.ask_hours = malloc(strlen(ask_hours)*sizeof(char));
+  strcpy(obj.ask_hours,ask_hours);
 
   /* ask for d code */
   obj.ask_code = malloc(strlen(ask_code)*sizeof(char));
   strcpy(obj.ask_code,ask_code);
+
+  /* ask for d msg */
+  obj.ask_msg = malloc(strlen(ask_msg)*sizeof(char));
+  strcpy(obj.ask_msg,ask_msg);
   
   /* welcome */
   obj.welcome = malloc(strlen(welcome)*sizeof(char));

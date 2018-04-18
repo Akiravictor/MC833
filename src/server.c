@@ -15,7 +15,7 @@ int main(){
   char buffer[MAXDATASIZE];
   int buf_size=0;
   messages msg = messages_constructor();
-  char *list, *delete;
+  char *list, *delete, *code, *d_msg, *room, *hours;
   /* LISTA DE DISCIPLINAS */
   lista l = lista_constructor();
   add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show");
@@ -171,11 +171,63 @@ int main(){
 	      list = p_list(l);
 	      send_and_receive(incoming_fd,list,&buf_size,buffer);
 	    }
+	    /* [change] */
+	    else if(strcmp(buffer,"change\r\n") == 0){
+	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+	      if(buf_size > 0){
+		buffer[buf_size-2] = '\0';
+		printf("server: received %s\n", buffer);
+		code = (char*)malloc((buf_size-2)*sizeof(char));
+		strcpy(code,buffer);
+		send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
+		if(buf_size > 0){
+		  buffer[buf_size-2] = '\0';
+		  printf("server: received %s\n", buffer);
+		  d_msg = c_message(&l,code,buffer);
+		  send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
+		}
+	      }
+	    }
+	    /* [add] */
+	    else if(strcmp(buffer,"add\r\n") == 0){
+	      /* ask for code */
+	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+	      if(buf_size > 0){
+		buffer[buf_size-2] = '\0';
+		printf("server: received %s\n", buffer);
+		code = (char*)malloc((buf_size-2)*sizeof(char));
+		strcpy(code,buffer);
+		/* ask for room id */
+		send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
+		if(buf_size > 0){
+		  buffer[buf_size-2] = '\0';
+		  printf("server: received %s\n", buffer);
+		  room = (char*)malloc((buf_size-2)*sizeof(char));
+		  strcpy(room,buffer);
+		  /* ask for class hours */
+		  send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
+		  if(buf_size > 0){
+		    buffer[buf_size-2] = '\0';
+		    printf("server: received %s\n", buffer);
+		    hours = (char*)malloc((buf_size-2)*sizeof(char));
+		    strcpy(hours,buffer);
+		    /* ask for msg */
+		    send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
+		    if(buf_size > 0){
+		      buffer[buf_size-2] = '\0';
+		      printf("server: received %s\n", buffer);
+		      d_msg = a_disciplina(&l,code,room,hours,buffer);
+		      send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
+		    }
+		  }
+		}
+	      }
+	    }
 	    /* [delete] */
 	    else if(strcmp(buffer,"delete\r\n") == 0){
 	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
 	      if(buf_size > 0){
-		buffer[buf_size] = '\0';
+		buffer[buf_size-2] = '\0';
 		printf("server: received %s\n", buffer);
 		delete = d_disc(&l,buffer);
 		send_and_receive(incoming_fd,delete,&buf_size,buffer);

@@ -37,4 +37,6 @@ void delete_disc(lista *l, char *code);
 char *d_disc(lista *l, char *code);
 char *p_disc(disciplina d);
 char *p_list(lista l);
+char *c_message(lista *l, char *code, char *mensagem);
+char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem);
 #endif

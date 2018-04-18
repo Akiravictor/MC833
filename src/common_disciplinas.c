@@ -161,7 +161,7 @@ char *d_disc(lista *l, char *code){
       if(strcmp(l->iterator->code , code) == 0){
 	l->iterator->deleted = 'y';
 	found = 1;
-	printf("Discipline %s is deleted\n",code);
+	printf("SERVER: Discipline %s is deleted\n",code);
 	sprintf(ret,"Discipline %s is deleted\n",code);
 	l->size--;
       }
@@ -171,14 +171,71 @@ char *d_disc(lista *l, char *code){
   
     }
     if(!found){
-      printf("Discipline %s not found\n",code);
+      printf("SERVER: Discipline %s not found\n",code);
       sprintf(ret,"Discipline %s not found\nTry listing them with 'list' command\n",code);
     }
   }
   else{
-    printf("There is no disciplines yet\n");
+    printf("SERVER: There is no disciplines yet\n");
     sprintf(ret,"There is no disciplines yet\nTry adding one with 'add' command\n");
   }
+  strcat(ret,"\nPress enter to go back\n");
+  return ret;
+}
+
+char *c_message(lista *l, char *code, char *mensagem){
+  int found = 0;
+  char *ret = (char*)malloc(100*sizeof(char));
+  if(l->size){
+    l->iterator = l->head;
+    for(int i=0; i< l->real_size; i++){
+      if( strcmp(l->iterator->code , code) == 0){
+	strcpy(l->iterator->mensagem , mensagem);
+	found = 1;
+	printf("SERVER: Changed the message inside discipline %s\n",code);
+	sprintf(ret,"Changed the message inside discipline %s\n",code);
+      }
+
+	if(l->iterator->next != NULL)
+	  l->iterator = l->iterator->next;
+
+    }
+    if(!found){
+      printf("SERVER: Discipline %s not found\n",code);
+      sprintf(ret,"Discipline %s not found\n",code);
+    }
+  }
+  else{
+    printf("SERVER: There is no disciplines yet\n");
+    sprintf(ret,"There is no disciplines yet\nTry adding one with 'add' command\n");
+  }
+  strcat(ret,"\nPress enter to go back\n");
+  return ret;
+
+}
+
+char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem){
+  disciplina *d = malloc(sizeof(disciplina));
+  char *ret = (char*)malloc(100*sizeof(char));
+  
+  *d = disciplina_constructor(code,sala,horarios,mensagem);
+
+
+  /* first node */
+  if(l->real_size == 0){
+    l->head = d;
+    l->tail = d;
+  }
+  /* list is not empty */
+  else{
+    l->tail->next = d;
+    l->tail = l->tail->next;
+  }
+  l->size++;
+  l->real_size++;
+
+  printf("SERVER: Discipline %s added with success\n",code);
+  sprintf(ret,"Discipline %s added with success\n",code);
   strcat(ret,"\nPress enter to go back\n");
   return ret;
 }
