@@ -13,6 +13,7 @@ typedef struct messages{
   char *error_persona;
   char *prof;
   char *student;
+  char *ask_code;
 }messages;
 
 /* Headers */

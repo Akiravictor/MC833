@@ -29,7 +29,12 @@ messages messages_constructor(){
  char student[] = "Welcome, student!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Close connection [exit]\n\n";
 
   char prof[] = "Welcome, professor!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Change message of a specific discipline [change]\n> Add discipline [add]\n> Delete discipline [delete]\n> Close connection [exit]\n\n";
- 
+  char ask_code[] = "Please enter the discipline code, e.g. 'MC833'\n";
+
+  /* ask for d code */
+  obj.ask_code = malloc(strlen(ask_code)*sizeof(char));
+  strcpy(obj.ask_code,ask_code);
+  
   /* welcome */
   obj.welcome = malloc(strlen(welcome)*sizeof(char));
   strcpy(obj.welcome ,welcome);

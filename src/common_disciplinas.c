@@ -123,10 +123,10 @@ void delete_disc(lista *l, char *code){
 
 char *p_disc(disciplina d){
   char *a = (char*)malloc(300*sizeof(char));
-  if(d.deleted == 'n')
+  if(d.deleted == 'n'){
     sprintf(a,"\nCódigo: %s\nSala: %s\nHorário: %s\nMensagem: %s\n",d.code,d.sala,d.horarios,d.mensagem);
-  else;
     printf("SERVER: %s\n",a);
+  }
   return a;
 }
 
@@ -149,4 +149,36 @@ char *p_list(lista l){
   }
   strcat(s,"\nPress enter to go back\n");
   return s;
+}
+
+char *d_disc(lista *l, char *code){
+  int found = 0;
+  char *ret = (char*)malloc(100*sizeof(char));
+  if(l->size){
+    l->iterator = l->head;
+    for(int i=0; i< l->real_size; i++){
+      printf("DEBUG: %s %s\n",l->iterator->code,code);
+      if(strcmp(l->iterator->code , code) == 0){
+	l->iterator->deleted = 'y';
+	found = 1;
+	printf("Discipline %s is deleted\n",code);
+	sprintf(ret,"Discipline %s is deleted\n",code);
+	l->size--;
+      }
+
+      if(l->iterator->next != NULL)
+	l->iterator = l->iterator->next;
+  
+    }
+    if(!found){
+      printf("Discipline %s not found\n",code);
+      sprintf(ret,"Discipline %s not found\nTry listing them with 'list' command\n",code);
+    }
+  }
+  else{
+    printf("There is no disciplines yet\n");
+    sprintf(ret,"There is no disciplines yet\nTry adding one with 'add' command\n");
+  }
+  strcat(ret,"\nPress enter to go back\n");
+  return ret;
 }

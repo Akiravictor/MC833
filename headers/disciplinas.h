@@ -34,6 +34,7 @@ void print_list(lista l);
 void change_message(lista *l, char *code, char *mensagem);
 void delete_disc(lista *l, char *code);
 
+char *d_disc(lista *l, char *code);
 char *p_disc(disciplina d);
 char *p_list(lista l);
 #endif

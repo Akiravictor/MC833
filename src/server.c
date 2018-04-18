@@ -15,7 +15,7 @@ int main(){
   char buffer[MAXDATASIZE];
   int buf_size=0;
   messages msg = messages_constructor();
-  char *list;
+  char *list, *delete;
   /* LISTA DE DISCIPLINAS */
   lista l = lista_constructor();
   add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show");
@@ -122,7 +122,7 @@ int main(){
       
       /* Student */
       else if(strcmp(buffer,"student\r\n") == 0){
-	puts("aluno selecionado");
+	puts("server: student selected");
 	while(1){
 	  /* Student menu */
 	  send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
@@ -150,7 +150,7 @@ int main(){
 
       /* Professor */
       else if(strcmp(buffer,"professor\r\n") == 0){
-	puts("professor selecionado");
+	puts("server: professor selected");
 	while(1){
 	  /* Prof menu */
 	  send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
@@ -170,6 +170,16 @@ int main(){
 	    else if(strcmp(buffer,"list\r\n") == 0){
 	      list = p_list(l);
 	      send_and_receive(incoming_fd,list,&buf_size,buffer);
+	    }
+	    /* [delete] */
+	    else if(strcmp(buffer,"delete\r\n") == 0){
+	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+	      if(buf_size > 0){
+		buffer[buf_size] = '\0';
+		printf("server: received %s\n", buffer);
+		delete = d_disc(&l,buffer);
+		send_and_receive(incoming_fd,delete,&buf_size,buffer);
+	      }
 	    }
 	  }
 	}
