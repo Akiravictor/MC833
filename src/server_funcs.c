@@ -24,9 +24,11 @@ messages messages_constructor(){
   /* Messages */
   char welcome[] = "Welcome to VigAkira™ school system.\nAre you a student or professor?\n'exit' closes connection\n";
   char error_persona[] = "Please enter 'professor' or 'student'\n";
-  char prof[] = "Welcome, professor!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Change message of a specific discipline [change]\n> Add discipline [add]\n> Delete discipline [delete]\n> Close connection [exit]\n\n";
+  
+  
  char student[] = "Welcome, student!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Close connection [exit]\n\n";
 
+  char prof[] = "Welcome, professor!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Change message of a specific discipline [change]\n> Add discipline [add]\n> Delete discipline [delete]\n> Close connection [exit]\n\n";
  
   /* welcome */
   obj.welcome = malloc(strlen(welcome)*sizeof(char));
@@ -36,13 +38,29 @@ messages messages_constructor(){
   obj.error_persona = malloc(strlen(error_persona)*sizeof(char));
   strcpy(obj.error_persona ,error_persona);
 
-  /* Prof page */
-  obj.prof = malloc(strlen(prof)*sizeof(char));
-  strcpy(obj.prof ,prof);
-
   /* Student page */
   obj.student = malloc(strlen(student)*sizeof(char));
   strcpy(obj.student ,student);
 
+    /* Prof page */
+  obj.prof = malloc(strlen(prof)*sizeof(char));
+  strcpy(obj.prof ,prof);
+
+
   return obj;
+}
+
+void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer){
+
+  if(send(incoming_fd, string ,strlen(string) , 0) == -1){
+    perror("server: send");
+  }
+  else if( (*buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
+    perror("server: receive");
+    exit(1);
+  }
+  if(*buf_size == 0){
+   close(incoming_fd);
+   exit(0);
+  }
 }

@@ -13,13 +13,15 @@ int main(){
   struct sockaddr_storage client_addr;
   char s[INET6_ADDRSTRLEN];
   char buffer[MAXDATASIZE];
-  int buf_size;
+  int buf_size=0;
   messages msg = messages_constructor();
+  char *list;
   /* LISTA DE DISCIPLINAS */
   lista l = lista_constructor();
-  add_disciplina(&l,833,332,"qui 10h am","o prof edmundo é show");
-  add_disciplina(&l,558,17,"ter qui 4h pm","tá O(n) pelo menos");
-  add_disciplina(&l,722,5,"ter qui 7h pm","MIIIIIPPPPPSSSS");
+  add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show");
+  add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos");
+  add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS");
+
   /////////////////////////////////////////////////////////////////////
   
   memset(&hints, 0, sizeof hints);
@@ -93,13 +95,16 @@ int main(){
   printf("server: connected to %s\n", s);
 
   /* Initial message */
-  if(send(incoming_fd, msg.welcome ,strlen(msg.welcome) , 0) == -1){
-    perror("server: send");
-  }
-  else if( (buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
-    perror("server: receive");
-    exit(1);
-  }
+  /* if(send(incoming_fd, msg.welcome ,strlen(msg.welcome) , 0) == -1){ */
+  /*   perror("server: send"); */
+  /* } */
+  /* else if( (buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){ */
+  /*   perror("server: receive"); */
+  /*   exit(1); */
+  /* } */
+
+  /* Initial Message */
+  send_and_receive(incoming_fd,msg.welcome,&buf_size,buffer);
   while(1){
 
     if(buf_size > 0){
@@ -115,45 +120,12 @@ int main(){
 	exit(0);
       }
       
-      /* Professor */
-      else if(strcmp(buffer,"professor\r\n") == 0){
-	while(1){
-	  /* Professor menu */
-	  if(send(incoming_fd, msg.prof ,strlen(msg.prof) , 0) == -1){
-	    perror("server: send");
-	  }
-	  else if( (buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
-	    perror("server: receive");
-	    exit(1);
-	  }
-	  if(buf_size > 0){
-	    buffer[buf_size] = '\0';
-	    printf("server: received %s\n", buffer);
-
-	    /* Exits */
-	    if(strcmp(buffer,"exit\r\n") == 0){
-	      if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
-		perror("server: send");
-	      }
-	      close(incoming_fd);
-	      exit(0);
-	    }
-	    
-	  }
-	}
-      }
-
       /* Student */
       else if(strcmp(buffer,"student\r\n") == 0){
+	puts("aluno selecionado");
 	while(1){
 	  /* Student menu */
-	  if(send(incoming_fd, msg.student ,strlen(msg.student) , 0) == -1){
-	    perror("server: send");
-	  }
-	  else if( (buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
-	    perror("server: receive");
-	    exit(1);
-	  }
+	  send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
 	  if(buf_size > 0){
 	    buffer[buf_size] = '\0';
 	    printf("server: received %s\n", buffer);
@@ -166,10 +138,45 @@ int main(){
 	      close(incoming_fd);
 	      exit(0);
 	    }
+	    /* [list] */
+	    else if(strcmp(buffer,"list\r\n") == 0){
+	      list = p_list(l);
+	      send_and_receive(incoming_fd,list,&buf_size,buffer);
+	    }
 	    
 	  }
 	}
       }
+
+      /* Professor */
+      else if(strcmp(buffer,"professor\r\n") == 0){
+	puts("professor selecionado");
+	while(1){
+	  /* Prof menu */
+	  send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
+	  if(buf_size > 0){
+	    buffer[buf_size] = '\0';
+	    printf("server: received %s\n", buffer);
+
+	    /* Exits */
+	    if(strcmp(buffer,"exit\r\n") == 0){
+	      if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
+		perror("server: send");
+	      }
+	      close(incoming_fd);
+	      exit(0);
+	    }
+	    /* [list] */
+	    else if(strcmp(buffer,"list\r\n") == 0){
+	      list = p_list(l);
+	      send_and_receive(incoming_fd,list,&buf_size,buffer);
+	    }
+	  }
+	}
+      }
+
+
+
     }
     /* Who are you?!?!?!?! */
      if(send(incoming_fd, msg.error_persona ,strlen(msg.error_persona) , 0) == -1){

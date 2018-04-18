@@ -7,13 +7,14 @@
 /* structs  */
 
 typedef struct disciplina{
-  int code;
-  int sala;
+  char code[10];
+  char sala[10];
   char horarios[50];
   char mensagem[255];
-  int deleted;
+  char deleted;
   struct disciplina *next;
 } disciplina;
+
 
 
 typedef struct lista{
@@ -25,12 +26,14 @@ typedef struct lista{
 }lista;
 
 
-disciplina disciplina_constructor(int code, int sala, char *horarios, char *mensagem);
+disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem);
 lista lista_constructor();
-void add_disciplina(lista *l, int code, int sala, char *horarios, char *mensagem);
+void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem);
 void print_disc(disciplina d);
 void print_list(lista l);
-void change_message(lista *l, int code, char *mensagem);
-void delete_disc(lista *l, int code);
+void change_message(lista *l, char *code, char *mensagem);
+void delete_disc(lista *l, char *code);
 
+char *p_disc(disciplina d);
+char *p_list(lista l);
 #endif

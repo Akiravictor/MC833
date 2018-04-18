@@ -19,5 +19,5 @@ typedef struct messages{
 void sigchld_handler(int s);
 void *get_in_addr(struct sockaddr *sa);
 messages messages_constructor();
-
+void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer);
 #endif
