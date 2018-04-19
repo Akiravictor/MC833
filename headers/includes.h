@@ -14,10 +14,18 @@
 #include <sys/wait.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 /* Custom libs */
 #include "client.h"
 #include "server.h"
 #include "disciplinas.h"
+
+/* defines */
+#define PORT "54321"
+#define QUEUE 10
+#define ADDR "localhost"
+#define MAXDATASIZE 2048
+
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "includes.h"
 
+
 /* Structs */
 typedef struct messages{
   char *welcome;
