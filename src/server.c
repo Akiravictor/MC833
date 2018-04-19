@@ -1,5 +1,9 @@
 #include "includes.h"
 
+#define PORT "54321"
+#define QUEUE 10
+#define MAXDATASIZE 255
+
 int main(){
   int status;
   int sockfd;

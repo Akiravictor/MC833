@@ -3,10 +3,6 @@
 
 #include "includes.h"
 
-#define PORT "54321"
-#define QUEUE 10
-#define MAXDATASIZE 255
-
 /* Structs */
 typedef struct messages{
   char *welcome;
