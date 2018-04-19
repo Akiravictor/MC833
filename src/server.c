@@ -16,6 +16,8 @@ int main(){
   int buf_size=0;
   messages msg = messages_constructor();
   char *list, *delete, *code, *d_msg, *room, *hours;
+  int connected;
+  pid_t process;
   /* LISTA DE DISCIPLINAS */
   lista l = lista_constructor();
   add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show");
@@ -80,176 +82,175 @@ int main(){
     perror("sigaction");
     exit(1);
   }
-
-  printf("server: waiting for connections...\n");
-
-  sin_size = sizeof client_addr;
-
-  //Accepts connection
-  if( (incoming_fd = accept(sockfd, (struct sockaddr*)&client_addr, &sin_size)) == -1){
-    perror("server: accept");
-  }
-
-  //Converts IPv4 and IPv6 addresses from binary to text form
-  inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*) &client_addr),s, sizeof s);
-  printf("server: connected to %s\n", s);
-
-  /* Initial message */
-  /* if(send(incoming_fd, msg.welcome ,strlen(msg.welcome) , 0) == -1){ */
-  /*   perror("server: send"); */
-  /* } */
-  /* else if( (buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){ */
-  /*   perror("server: receive"); */
-  /*   exit(1); */
-  /* } */
-
-  /* Initial Message */
-  send_and_receive(incoming_fd,msg.welcome,&buf_size,buffer);
   while(1){
+    printf("server: waiting for connections...\n");
 
-    if(buf_size > 0){
-      buffer[buf_size] = '\0';
-      printf("server: received %s\n", buffer);
+    sin_size = sizeof client_addr;
 
-      /* Exits */
-      if(strcmp(buffer,"exit\r\n") == 0){
-	if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
-	  perror("server: send");
-	}
-	close(incoming_fd);
-	exit(0);
-      }
-      
-      /* Student */
-      else if(strcmp(buffer,"student\r\n") == 0){
-	puts("server: student selected");
-	while(1){
-	  /* Student menu */
-	  send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
-	  if(buf_size > 0){
-	    buffer[buf_size] = '\0';
-	    printf("server: received %s\n", buffer);
 
-	    /* Exits */
-	    if(strcmp(buffer,"exit\r\n") == 0){
-	      if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
-		perror("server: send");
-	      }
-	      close(incoming_fd);
-	      exit(0);
+    //Accepts connection
+    if( (incoming_fd = accept(sockfd, (struct sockaddr*)&client_addr, &sin_size)) == -1){
+      perror("server: accept");
+    }
+    connected = 1;
+    process = fork();
+    /* erro */
+    if(process < 0){
+      perror("Ih rapaz...\n");
+    }
+    /* Parent */
+    if(process == 0){
+      printf("SERVER_PROCESS: I am parent %d of %d\n",getpid(),process);
+      wait(NULL);
+    }
+    else{
+      printf("SERVER_PROCESS: I am child %d of %d\n",getpid(),getppid());
+
+      //Converts IPv4 and IPv6 addresses from binary to text form
+      inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*) &client_addr),s, sizeof s);
+      printf("server: connected to %s\n", s);
+
+      /* Initial Message */
+      send_and_receive(incoming_fd,msg.welcome,&buf_size,buffer);
+      while(connected){
+
+	if(buf_size > 0){
+	  buffer[buf_size] = '\0';
+	  printf("server: received %s\n", buffer);
+
+	  /* Exits */
+	  if(strcmp(buffer,"exit\r\n") == 0){
+	    if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
+	      perror("server: send");
 	    }
-	    /* [list] */
-	    else if(strcmp(buffer,"list\r\n") == 0){
-	      list = p_list(l);
-	      send_and_receive(incoming_fd,list,&buf_size,buffer);
-	    }
-	    
+	    close(incoming_fd);
+	    connected=0;
 	  }
-	}
-      }
-
-      /* Professor */
-      else if(strcmp(buffer,"professor\r\n") == 0){
-	puts("server: professor selected");
-	while(1){
-	  /* Prof menu */
-	  send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
-	  if(buf_size > 0){
-	    buffer[buf_size] = '\0';
-	    printf("server: received %s\n", buffer);
-
-	    /* Exits */
-	    if(strcmp(buffer,"exit\r\n") == 0){
-	      if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
-		perror("server: send");
-	      }
-	      close(incoming_fd);
-	      exit(0);
-	    }
-	    /* [list] */
-	    else if(strcmp(buffer,"list\r\n") == 0){
-	      list = p_list(l);
-	      send_and_receive(incoming_fd,list,&buf_size,buffer);
-	    }
-	    /* [change] */
-	    else if(strcmp(buffer,"change\r\n") == 0){
-	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+      
+	  /* Student */
+	  else if(strcmp(buffer,"student\r\n") == 0){
+	    puts("server: student selected");
+	    while(connected){
+	      /* Student menu */
+	      send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
 	      if(buf_size > 0){
-		buffer[buf_size-2] = '\0';
+		buffer[buf_size] = '\0';
 		printf("server: received %s\n", buffer);
-		code = (char*)malloc((buf_size-2)*sizeof(char));
-		strcpy(code,buffer);
-		send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
-		if(buf_size > 0){
-		  buffer[buf_size-2] = '\0';
-		  printf("server: received %s\n", buffer);
-		  d_msg = c_message(&l,code,buffer);
-		  send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
+
+		/* Exits */
+		if(strcmp(buffer,"exit\r\n") == 0){
+		  if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
+		    perror("server: send");
+		  }
+		  close(incoming_fd);
+		  connected = 0;
 		}
+		/* [list] */
+		else if(strcmp(buffer,"list\r\n") == 0){
+		  list = p_list(l);
+		  send_and_receive(incoming_fd,list,&buf_size,buffer);
+		}
+	    
 	      }
 	    }
-	    /* [add] */
-	    else if(strcmp(buffer,"add\r\n") == 0){
-	      /* ask for code */
-	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+	  }
+
+	  /* Professor */
+	  else if(strcmp(buffer,"professor\r\n") == 0){
+	    puts("server: professor selected");
+	    while(connected){
+	      /* Prof menu */
+	      send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
 	      if(buf_size > 0){
-		buffer[buf_size-2] = '\0';
+		buffer[buf_size] = '\0';
 		printf("server: received %s\n", buffer);
-		code = (char*)malloc((buf_size-2)*sizeof(char));
-		strcpy(code,buffer);
-		/* ask for room id */
-		send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
-		if(buf_size > 0){
-		  buffer[buf_size-2] = '\0';
-		  printf("server: received %s\n", buffer);
-		  room = (char*)malloc((buf_size-2)*sizeof(char));
-		  strcpy(room,buffer);
-		  /* ask for class hours */
-		  send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
+
+		/* Exits */
+		if(strcmp(buffer,"exit\r\n") == 0){
+		  if(send(incoming_fd, "Closing Connection fella!", 25, 0) == -1){
+		    perror("server: send");
+		  }
+		  close(incoming_fd);
+		  connected = 0;
+		}
+		/* [list] */
+		else if(strcmp(buffer,"list\r\n") == 0){
+		  list = p_list(l);
+		  send_and_receive(incoming_fd,list,&buf_size,buffer);
+		}
+		/* [change] */
+		else if(strcmp(buffer,"change\r\n") == 0){
+		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
 		  if(buf_size > 0){
 		    buffer[buf_size-2] = '\0';
 		    printf("server: received %s\n", buffer);
-		    hours = (char*)malloc((buf_size-2)*sizeof(char));
-		    strcpy(hours,buffer);
-		    /* ask for msg */
+		    code = (char*)malloc((buf_size-2)*sizeof(char));
+		    strcpy(code,buffer);
 		    send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
 		    if(buf_size > 0){
 		      buffer[buf_size-2] = '\0';
 		      printf("server: received %s\n", buffer);
-		      d_msg = a_disciplina(&l,code,room,hours,buffer);
+		      d_msg = c_message(&l,code,buffer);
 		      send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
 		    }
 		  }
 		}
-	      }
-	    }
-	    /* [delete] */
-	    else if(strcmp(buffer,"delete\r\n") == 0){
-	      send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-	      if(buf_size > 0){
-		buffer[buf_size-2] = '\0';
-		printf("server: received %s\n", buffer);
-		delete = d_disc(&l,buffer);
-		send_and_receive(incoming_fd,delete,&buf_size,buffer);
+		/* [add] */
+		else if(strcmp(buffer,"add\r\n") == 0){
+		  /* ask for code */
+		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+		  if(buf_size > 0){
+		    buffer[buf_size-2] = '\0';
+		    printf("server: received %s\n", buffer);
+		    code = (char*)malloc((buf_size-2)*sizeof(char));
+		    strcpy(code,buffer);
+		    /* ask for room id */
+		    send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
+		    if(buf_size > 0){
+		      buffer[buf_size-2] = '\0';
+		      printf("server: received %s\n", buffer);
+		      room = (char*)malloc((buf_size-2)*sizeof(char));
+		      strcpy(room,buffer);
+		      /* ask for class hours */
+		      send_and_receive(incoming_fd,msg.ask_hours,&buf_size,buffer);
+		      if(buf_size > 0){
+			buffer[buf_size-2] = '\0';
+			printf("server: received %s\n", buffer);
+			hours = (char*)malloc((buf_size-2)*sizeof(char));
+			strcpy(hours,buffer);
+			/* ask for msg */
+			send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
+			if(buf_size > 0){
+			  buffer[buf_size-2] = '\0';
+			  printf("server: received %s\n", buffer);
+			  d_msg = a_disciplina(&l,code,room,hours,buffer);
+			  send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
+			}
+		      }
+		    }
+		  }
+		}
+		/* [delete] */
+		else if(strcmp(buffer,"delete\r\n") == 0){
+		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
+		  if(buf_size > 0){
+		    buffer[buf_size-2] = '\0';
+		    printf("server: received %s\n", buffer);
+		    delete = d_disc(&l,buffer);
+		    send_and_receive(incoming_fd,delete,&buf_size,buffer);
+		  }
+		}
 	      }
 	    }
 	  }
 	}
+	/* Who are you?!?!?!?! */
+	if(connected)
+	  send_and_receive(incoming_fd,msg.error_persona,&buf_size,buffer);
       }
-
-
-
     }
-    /* Who are you?!?!?!?! */
-     if(send(incoming_fd, msg.error_persona ,strlen(msg.error_persona) , 0) == -1){
-       perror("server: send");
-     }
-     else if( (buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
-       perror("server: receive");
-       exit(1);
-     }
   }
-
+  puts("DEBUG: out");
   return 0;
 }
 

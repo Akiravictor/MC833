@@ -4,7 +4,19 @@
 
 int main(){
 
-  /* disciplina d = disciplina_constructor("mc833","cb","ter qui","topster"); */
-  /* print_disc(d); */
-  return 0;
+  int a=10,b=1;
+  
+  while(1){
+    /* filho */
+    if(fork()==0){
+      a++;
+      b++;
+      printf("filho %d de %d: %d %d\n",getpid(),getppid(),a,b);
+    }
+    else{
+      printf("pai %d: %d %d\n",getpid(),a,b);
+      wait(NULL);
+    }
+    sleep(1);
+  }
 }
