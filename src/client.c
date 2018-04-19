@@ -50,6 +50,11 @@ int main(){
 			perror("recv");
 			exit(1);
 		}
+		
+		if(numbytes == 0){
+			close(sockfd);
+			exit(0);
+		}
 
 		buf[numbytes-1] = '\0';
 
