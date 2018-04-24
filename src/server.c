@@ -1,257 +1,187 @@
-#include "includes.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-int main(){
-  int status;
-  int sockfd;
-  int incoming_fd;
-  int yes=1;
-  struct sigaction sa;
-  struct addrinfo hints;
-  struct addrinfo *serverInfo;
-  struct addrinfo *p;
-  socklen_t sin_size;
-  struct sockaddr_storage client_addr;
-  char s[INET6_ADDRSTRLEN];
-  char buffer[MAXDATASIZE];
-  int buf_size=0;
-  messages msg = messages_constructor();
-  char *list, *delete, *code, *d_msg, *room, *hours;
-  int connected;
-  pid_t process;
-  /* LISTA DE DISCIPLINAS */
-  lista l = lista_constructor();
-  add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show");
-  add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos");
-  add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS");
+#include <netdb.h>
+#include <unistd.h>
+#include <signal.h>
+#include <errno.h>
 
-  /////////////////////////////////////////////////////////////////////
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <netinet/in.h>
 
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET; //sets IPv4 use
-  hints.ai_socktype = SOCK_STREAM; //TCP socket type
-  hints.ai_flags = AI_PASSIVE;
+#define PORT "54321"
+#define QUEUE 10
+#define MAXDATASIZE 2048
+#define TRUE 1
+#define FALSE 0
 
-  //Setting up connection
-  if( (status = getaddrinfo(NULL, PORT, &hints, &serverInfo)) != 0){
-    fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-    exit(1);
-  }
+void sigchld_handler(int s) {
+	int saved_errno = errno;
 
-  //Looping through the results and binding to the 1st possible
-  for(p = serverInfo; p != NULL; p = p->ai_next){
-
-    //Setting socket
-    if( (sockfd = socket(p->ai_family, p->ai_socktype,p->ai_protocol)) == -1){
-      perror("server: socket");
-      continue;
-    }
-
-    //Letting the address/port being reusable
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
-      perror("setsockopt");
-      exit(1);
-    }
-
-    //Binding process to port
-    if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1){
-      close(sockfd);
-      perror("server: bind");
-      continue;
-    }
-
-    break;
-  }
-
-  freeaddrinfo(serverInfo);
-
-  if(p == NULL){
-    fprintf(stderr, "server: failed to bind\n");
-    exit(1);
-  }
-
-  //Listen and wait for connections
-  if(listen(sockfd, QUEUE) == -1){
-    perror("server: listen");
-    exit(1);
-  }
-
-  sa.sa_handler = sigchld_handler; // reap all dead processes
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = SA_RESTART;
-  if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-    perror("sigaction");
-    exit(1);
-  }
-  while(1){
-    printf("server: waiting for connections...\n");
-
-    sin_size = sizeof client_addr;
-
-
-    //Accepts connection
-    if( (incoming_fd = accept(sockfd, (struct sockaddr*)&client_addr, &sin_size)) == -1){
-      perror("server: accept");
-    }
-    connected = 1;
-    process = fork();
-    /* erro */
-    if(process < 0){
-      perror("Ih rapaz...\n");
-    }
-    /* Parent */
-    if(process == 0){
-      printf("SERVER_PROCESS: I am parent %d of %d\n",getpid(),process);
-      close(incoming_fd);
-      wait(NULL);
-    }
-    else{
-      printf("SERVER_PROCESS: I am child %d of %d\n",getpid(),getppid());
-
-      //Converts IPv4 and IPv6 addresses from binary to text form
-      inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*) &client_addr),s, sizeof s);
-      printf("server: connected to %s\n", s);
-
-      /* Initial Message */
-      send_and_receive(incoming_fd,msg.welcome,&buf_size,buffer);
-      while(connected){
-
-	if(buf_size > 0){
-	  buffer[buf_size] = '\0';
-	  printf("server: received %s\n", buffer);
-
-	  /* Exits */
-	  if(strcmp(buffer,"exit\r\n") == 0){
-	    if(send(incoming_fd, NULL, 0, 0) == -1){
-	      perror("server: send");
-	    }
-	    close(incoming_fd);
-	    connected=0;
-	  }
-
-	  /* Student */
-	  else if(strcmp(buffer,"student\n") == 0){
-	    puts("server: student selected");
-	    while(connected){
-	      /* Student menu */
-	      send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
-	      if(buf_size > 0){
-		buffer[buf_size] = '\0';
-		printf("server: received %s\n", buffer);
-
-		/* Exits */
-		if(strcmp(buffer,"exit\n") == 0){
-		  if(send(incoming_fd, NULL, 0, 0) == -1){
-		    perror("server: send");
-		  }
-		  close(incoming_fd);
-		  connected = 0;
-		}
-		/* [list] */
-		else if(strcmp(buffer,"list\n") == 0){
-		  list = p_list(l);
-		  send_and_receive(incoming_fd,list,&buf_size,buffer);
-		}
-
-	      }
-	    }
-	  }
-
-	  /* Professor */
-	  else if(strcmp(buffer,"professor\n") == 0){
-	    puts("server: professor selected");
-	    while(connected){
-	      /* Prof menu */
-	      send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
-	      if(buf_size > 0){
-		buffer[buf_size] = '\0';
-		printf("server: received %s\n", buffer);
-
-		/* Exits */
-		if(strcmp(buffer,"exit\n") == 0){
-		  if(send(incoming_fd, NULL, 0, 0) == -1){
-		    perror("server: send");
-		  }
-		  close(incoming_fd);
-		  connected = 0;
-		}
-		/* [list] */
-		else if(strcmp(buffer,"list\n") == 0){
-		  list = p_list(l);
-		  send_and_receive(incoming_fd,list,&buf_size,buffer);
-		}
-		/* [change] */
-		else if(strcmp(buffer,"change\n") == 0){
-		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-		  if(buf_size > 0){
-		    buffer[buf_size-1] = '\0';
-		    printf("server: received %s\n", buffer);
-		    code = (char*)malloc((buf_size-1)*sizeof(char));
-		    strcpy(code,buffer);
-		    send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
-		    if(buf_size > 0){
-		      buffer[buf_size-1] = '\0';
-		      printf("server: received %s\n", buffer);
-		      d_msg = c_message(&l,code,buffer);
-		      send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
-		    }
-		  }
-		}
-		/* [add] */
-		else if(strcmp(buffer,"add\n") == 0){
-		  /* ask for code */
-		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-		  if(buf_size > 0){
-		    buffer[buf_size-1] = '\0';
-		    printf("server: received %s\n", buffer);
-		    code = (char*)malloc((buf_size-1)*sizeof(char));
-		    strcpy(code,buffer);
-		    /* ask for room id */
-		    send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
-		    if(buf_size > 0){
-		      buffer[buf_size-1] = '\0';
-		      printf("server: received %s\n", buffer);
-		      room = (char*)malloc((buf_size-1)*sizeof(char));
-		      strcpy(room,buffer);
-		      /* ask for class hours */
-		      send_and_receive(incoming_fd,msg.ask_hours,&buf_size,buffer);
-		      if(buf_size > 0){
-			buffer[buf_size-1] = '\0';
-			printf("server: received %s\n", buffer);
-			hours = (char*)malloc((buf_size-1)*sizeof(char));
-			strcpy(hours,buffer);
-			/* ask for msg */
-			send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
-			if(buf_size > 0){
-			  buffer[buf_size-1] = '\0';
-			  printf("server: received %s\n", buffer);
-			  d_msg = a_disciplina(&l,code,room,hours,buffer);
-			  send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
-			}
-		      }
-		    }
-		  }
-		}
-		/* [delete] */
-		else if(strcmp(buffer,"delete\n") == 0){
-		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-		  if(buf_size > 0){
-		    buffer[buf_size-1] = '\0';
-		    printf("server: received %s\n", buffer);
-		    delete = d_disc(&l,buffer);
-		    send_and_receive(incoming_fd,delete,&buf_size,buffer);
-		  }
-		}
-	      }
-	    }
-	  }
-	}
-	/* Who are you?!?!?!?! */
-	if(connected)
-	  send_and_receive(incoming_fd,msg.error_persona,&buf_size,buffer);
-      }
-    }
-  }
-  puts("DEBUG: out");
-  return 0;
+	while( waitpid(-1, NULL, WNOHANG) > 0);
+	errno = saved_errno;
 }
 
+int main(){
+	int sts, in_sockfd, buf_size;
+	int master_socket, new_socket, client_socket[30];
+	int max_clients = 30, sd, max_sd, activity;
+	int yes = 1;
+	struct sigaction sa;
+	struct addrinfo hints, *servinfo, *p;
+	struct sockaddr_storage client_addr;
+	struct sockaddr_in addr_in;
+	char s[INET6_ADDRSTRLEN], buffer[MAXDATASIZE];
+	socklen_t sin_size;
+	pid_t process;
+	fd_set readfds;
+
+	int i;
+
+	printf("Setting up socket...\n");
+
+	memset(&hints, 0, sizeof (hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+
+	for (i = 0; i < max_clients; i++) {
+		client_socket[i] = 0;
+	}
+
+	if( (sts = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+		fprintf(stderr, "GetAddrInfo Error: %s\n", gai_strerror(sts));	
+	}
+
+	for(p = servinfo; p != NULL; p = p->ai_next) {
+		if( (master_socket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+			perror("Server: socket");
+			continue;
+		}
+
+		if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof (int)) == -1) {
+			perror("Server: setSocketOpt");
+			exit(1);
+		}
+
+		if( bind(master_socket, p->ai_addr, p->ai_addrlen) == -1) {
+			close(master_socket);
+			perror("Server: bind");
+			continue;
+		}
+
+		break;
+	}
+
+	freeaddrinfo(servinfo);
+
+	if( p == NULL) {
+		fprintf(stderr, "Server: failed to bind");
+		exit(1);
+	}
+
+	printf("Readying listening...\n");
+
+	if( listen(master_socket, QUEUE) == -1) {
+		perror("Server: listen");
+		exit(1);
+	}
+
+	sa.sa_handler = sigchld_handler; // reap all dead processes
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+
+	if( sigaction(SIGCHLD, &sa, NULL) == -1) {
+		perror("Sigaction");
+		exit(1);
+	}
+
+	sin_size = sizeof (addr_in);
+
+	printf("Waiting for connections...\n");
+
+	while(TRUE) {
+		FD_ZERO(&readfds);
+
+		FD_SET(master_socket, &readfds);
+		max_sd = master_socket;
+
+		for(i = 0; i < max_clients; i++) {
+			//Socket descriptor
+			sd = client_socket[i];
+			
+			//Valid Socket should be a number diff from 0 (since we zero'ed all nodes in client)
+			if(sd > 0) {
+				FD_SET(sd, &readfds);
+			}
+
+			if(sd > max_sd) {
+				max_sd = sd;
+			}
+		}
+		
+		//timeout is NULL
+		//writefds and exceptionfds are NULL
+		if( (activity = select( max_sd + 1, &readfds, NULL, NULL, NULL)) == -1 && errno != EINTR) {
+			fprintf(stderr, "Server: select");
+		}
+		
+		if( FD_ISSET(master_socket, &readfds)) {
+			if( (new_socket = accept( master_socket, (struct sockaddr*) &addr_in, (socklen_t*)&sin_size)) == -1) {
+				perror("Server: accept");
+				exit(1);
+			}
+			
+			printf("New connection: Socket FD: %d IP: %s PORT: %d\n", new_socket, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
+
+			if( send(new_socket, "Hello Client!\n", 15, 0) == -1){
+				perror("Server: send");
+			}
+
+			for( i = 0; i < max_clients; i++) {
+				if( client_socket[i] == 0) {
+					client_socket[i] = new_socket;
+					//Adds the new incoming socket to the active sockets list
+					break;
+				}
+			}
+
+		}
+
+		for( i = 0; i < max_clients; i++) {
+			sd = client_socket[i];
+
+			if( FD_ISSET( sd, &readfds)){
+				buf_size = recv( sd, buffer, MAXDATASIZE-1, 0);
+				if( buf_size == -1) {
+					perror("Server: receive");
+					exit(1);
+				}
+				else if( buf_size == 0) {
+					getpeername( sd, (struct sockaddr*)&addr_in, (socklen_t*)&sin_size);
+					printf("Disconnected: IP: %s PORT: %d\n", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
+
+					close(sd);
+					client_socket[i] = 0;
+				}
+				else {
+					int size = buf_size -2;
+					buffer[size] = '\0';
+					printf("Received: %s from IP: %s PORT: %d\n", buffer, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
+
+					buffer[size] = '\n';
+					buffer[size + 1] = '\0';
+					send(sd, buffer, strlen(buffer), 0);
+				}
+			}
+		}
+	}
+	
+	return 0;
+} 
