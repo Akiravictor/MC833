@@ -151,9 +151,9 @@ int main(){
 			
 			printf("New connection: Socket FD: %d IP: %s PORT: %d\n", new_socket, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
-			if( send(new_socket, "Hello Client!\n", 14, 0) == -1){
+			/*if( send(new_socket, "Hello Client!\n", 14, 0) == -1){
 				perror("Server: send");
-			}
+			}*/
 
 			for( i = 0; i < max_clients; i++) {
 				if( client_socket[i] == 0) {
