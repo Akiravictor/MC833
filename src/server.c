@@ -28,20 +28,12 @@ void sigchld_handler(int s) {
 	errno = saved_errno;
 }
 
-int main(){
-	int sts, in_sockfd, buf_size;
-	int master_socket, new_socket, client_socket[30];
-	int max_clients = 30, sd, max_sd, activity;
+int setupConnection(int max_clients, int* client_socket) {
+	int sts, sockfd;
 	int yes = 1;
 	struct sigaction sa;
 	struct addrinfo hints, *servinfo, *p;
-	struct sockaddr_storage client_addr;
-	struct sockaddr_in addr_in;
-	char s[INET6_ADDRSTRLEN], buffer[MAXDATASIZE];
-	socklen_t sin_size;
-	pid_t process;
-	fd_set readfds;
-
+	
 	int i;
 
 	printf("Setting up socket...\n");
@@ -60,18 +52,18 @@ int main(){
 	}
 
 	for(p = servinfo; p != NULL; p = p->ai_next) {
-		if( (master_socket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if( (sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("Server: socket");
 			continue;
 		}
 
-		if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof (int)) == -1) {
+		if( setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof (int)) == -1) {
 			perror("Server: setSocketOpt");
 			exit(1);
 		}
 
-		if( bind(master_socket, p->ai_addr, p->ai_addrlen) == -1) {
-			close(master_socket);
+		if( bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sockfd);
 			perror("Server: bind");
 			continue;
 		}
@@ -88,7 +80,7 @@ int main(){
 
 	printf("Readying listening...\n");
 
-	if( listen(master_socket, QUEUE) == -1) {
+	if( listen(sockfd, QUEUE) == -1) {
 		perror("Server: listen");
 		exit(1);
 	}
@@ -101,6 +93,25 @@ int main(){
 		perror("Sigaction");
 		exit(1);
 	}
+	
+	return sockfd;
+}
+
+int main(){
+	int in_sockfd;
+	int master_socket, new_socket, client_socket[30];
+	int max_clients = 30, sd, max_sd, activity;	
+	int buf_size;
+	int i;
+
+	struct sockaddr_storage client_addr;
+	struct sockaddr_in addr_in;
+	char s[INET6_ADDRSTRLEN], buffer[MAXDATASIZE];
+	socklen_t sin_size;
+	pid_t process;
+	fd_set readfds;
+
+	master_socket = setupConnection(max_clients, client_socket);
 
 	sin_size = sizeof (addr_in);
 
@@ -140,7 +151,7 @@ int main(){
 			
 			printf("New connection: Socket FD: %d IP: %s PORT: %d\n", new_socket, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
-			if( send(new_socket, "Hello Client!\n", 15, 0) == -1){
+			if( send(new_socket, "Hello Client!\n", 14, 0) == -1){
 				perror("Server: send");
 			}
 
@@ -171,7 +182,7 @@ int main(){
 					client_socket[i] = 0;
 				}
 				else {
-					int size = buf_size -2;
+					int size = buf_size;// -1;
 					buffer[size] = '\0';
 					printf("Received: %s from IP: %s PORT: %d\n", buffer, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
