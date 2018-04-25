@@ -97,6 +97,33 @@ int setupConnection(int max_clients, int* client_socket) {
 	return sockfd;
 }
 
+void sendMsg(int sock, char* msg, int msgLen){
+	if( send(sock, msg, strlen(msg), 0) == -1) {
+		perror("Client: send");
+	}
+}
+
+int recvMsg(int sock, char* buffer) {
+	int buf_size;
+	
+	buffer[0] = '\0';
+	
+	buf_size = recv(sock, buffer, MAXDATASIZE -1, 0);
+	
+	if( buf_size == -1) {
+		perror("Server: receive");
+		exit(1);
+	}
+	else if( buf_size == 0) {
+		//close(sock);
+	}
+	else {
+		//int size = buf_size -1;
+		buffer[buf_size] = '\0';
+	}
+	return buf_size;
+}
+
 int main(){
 	int in_sockfd;
 	int master_socket, new_socket, client_socket[30];
@@ -169,12 +196,16 @@ int main(){
 			sd = client_socket[i];
 
 			if( FD_ISSET( sd, &readfds)){
-				buf_size = recv( sd, buffer, MAXDATASIZE-1, 0);
+				buf_size = recvMsg( sd, buffer);
+				
+				/*
 				if( buf_size == -1) {
 					perror("Server: receive");
 					exit(1);
 				}
-				else if( buf_size == 0) {
+				
+				else */
+				if( buf_size == 0) {
 					getpeername( sd, (struct sockaddr*)&addr_in, (socklen_t*)&sin_size);
 					printf("Disconnected: IP: %s PORT: %d\n", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
@@ -182,13 +213,14 @@ int main(){
 					client_socket[i] = 0;
 				}
 				else {
-					int size = buf_size;// -1;
-					buffer[size] = '\0';
+					//int size = buf_size;// -1;
+					//buffer[size] = '\0';
 					printf("Received: %s from IP: %s PORT: %d\n", buffer, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
-					buffer[size] = '\n';
-					buffer[size + 1] = '\0';
-					send(sd, buffer, strlen(buffer), 0);
+					//buffer[size] = '\n';
+					//buffer[size] = '\0';
+					//send(sd, buffer, strlen(buffer), 0);
+					sendMsg(sd, buffer, strlen(buffer));
 				}
 			}
 		}
