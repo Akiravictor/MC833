@@ -18,7 +18,10 @@ typedef struct messages{
 
 /* Headers */
 void sigchld_handler(int s);
-void *get_in_addr(struct sockaddr *sa);
+int setupConnectionS(int max_clients, int* client_socket);
+void sendMsg(int sock, char* msg);
+int recvMsgS(int sock, char* buffer);
+void executeMenu(char* buffer);
 messages messages_constructor();
-void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer);
+
 #endif

@@ -4,14 +4,17 @@
 #include "includes.h"
 
 
+
 /* structs  */
 
 typedef struct disciplina{
   char code[10];
   char sala[10];
   char horarios[50];
+  char ementa[255];
   char mensagem[255];
-  char deleted;
+  char titulo[100];
+  int deleted;
   struct disciplina *next;
 } disciplina;
 
@@ -26,9 +29,9 @@ typedef struct lista{
 }lista;
 
 
-disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem);
+disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo);
 lista lista_constructor();
-void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem);
+void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo);
 void print_disc(disciplina d);
 void print_list(lista l);
 void change_message(lista *l, char *code, char *mensagem);
@@ -38,5 +41,5 @@ char *d_disc(lista *l, char *code);
 char *p_disc(disciplina d);
 char *p_list(lista l);
 char *c_message(lista *l, char *code, char *mensagem);
-char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem);
+char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo);
 #endif

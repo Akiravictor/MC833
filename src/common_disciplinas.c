@@ -19,22 +19,24 @@ lista lista_constructor(){
  
 
 
-disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem){
+disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo){
   disciplina obj;
   strcpy(obj.code,code);
   strcpy(obj.sala,sala);
   strcpy(obj.horarios,horarios);
+  strcpy(obj.ementa,ementa);
   strcpy(obj.mensagem,mensagem);
+  strcpy(obj.titulo,titulo);
   obj.deleted = 'n';
   obj.next = NULL;
   //printf("%s %s %s %s\n",obj.code,obj.sala,obj.horarios,obj.mensagem);
   return obj;
 }
 
-void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem){
+void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo){
   disciplina *d = malloc(sizeof(disciplina));
 
-  *d = disciplina_constructor(code,sala,horarios,mensagem);
+  *d = disciplina_constructor(code,sala,horarios,ementa,mensagem,titulo);
 
 
   /* first node */
@@ -214,11 +216,11 @@ char *c_message(lista *l, char *code, char *mensagem){
 
 }
 
-char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem){
+char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo){
   disciplina *d = malloc(sizeof(disciplina));
   char *ret = (char*)malloc(100*sizeof(char));
   
-  *d = disciplina_constructor(code,sala,horarios,mensagem);
+  *d = disciplina_constructor(code,sala,horarios,ementa,mensagem,titulo);
 
 
   /* first node */

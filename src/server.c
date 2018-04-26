@@ -1,128 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include <netdb.h>
-#include <unistd.h>
-#include <signal.h>
-#include <errno.h>
-
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-
-#define PORT "54321"
-#define QUEUE 10
-#define MAXDATASIZE 2048
-#define TRUE 1
-#define FALSE 0
-
-void sigchld_handler(int s) {
-	int saved_errno = errno;
-
-	while( waitpid(-1, NULL, WNOHANG) > 0);
-	errno = saved_errno;
-}
-
-int setupConnection(int max_clients, int* client_socket) {
-	int sts, sockfd;
-	int yes = 1;
-	struct sigaction sa;
-	struct addrinfo hints, *servinfo, *p;
-	
-	int i;
-
-	printf("Setting up socket...\n");
-
-	memset(&hints, 0, sizeof (hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
-
-	for (i = 0; i < max_clients; i++) {
-		client_socket[i] = 0;
-	}
-
-	if( (sts = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
-		fprintf(stderr, "GetAddrInfo Error: %s\n", gai_strerror(sts));	
-	}
-
-	for(p = servinfo; p != NULL; p = p->ai_next) {
-		if( (sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("Server: socket");
-			continue;
-		}
-
-		if( setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof (int)) == -1) {
-			perror("Server: setSocketOpt");
-			exit(1);
-		}
-
-		if( bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
-			perror("Server: bind");
-			continue;
-		}
-
-		break;
-	}
-
-	freeaddrinfo(servinfo);
-
-	if( p == NULL) {
-		fprintf(stderr, "Server: failed to bind");
-		exit(1);
-	}
-
-	printf("Readying listening...\n");
-
-	if( listen(sockfd, QUEUE) == -1) {
-		perror("Server: listen");
-		exit(1);
-	}
-
-	sa.sa_handler = sigchld_handler; // reap all dead processes
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-
-	if( sigaction(SIGCHLD, &sa, NULL) == -1) {
-		perror("Sigaction");
-		exit(1);
-	}
-	
-	return sockfd;
-}
-
-void sendMsg(int sock, char* msg, int msgLen){
-	if( send(sock, msg, strlen(msg), 0) == -1) {
-		perror("Client: send");
-	}
-}
-
-int recvMsg(int sock, char* buffer) {
-	int buf_size;
-	
-	buffer[0] = '\0';
-	
-	buf_size = recv(sock, buffer, MAXDATASIZE -1, 0);
-	
-	if( buf_size == -1) {
-		perror("Server: receive");
-		exit(1);
-	}
-	else if( buf_size == 0) {
-		//close(sock);
-	}
-	else {
-		//int size = buf_size -1;
-		buffer[buf_size] = '\0';
-	}
-	return buf_size;
-}
+#include "includes.h"
 
 int main(){
 	int in_sockfd;
@@ -130,6 +6,8 @@ int main(){
 	int max_clients = 30, sd, max_sd, activity;	
 	int buf_size;
 	int i;
+	
+	int whoIsConnected = 0;
 
 	struct sockaddr_storage client_addr;
 	struct sockaddr_in addr_in;
@@ -138,7 +16,7 @@ int main(){
 	pid_t process;
 	fd_set readfds;
 
-	master_socket = setupConnection(max_clients, client_socket);
+	master_socket = setupConnectionS(max_clients, client_socket);
 
 	sin_size = sizeof (addr_in);
 
@@ -196,31 +74,37 @@ int main(){
 			sd = client_socket[i];
 
 			if( FD_ISSET( sd, &readfds)){
-				buf_size = recvMsg( sd, buffer);
+				buf_size = recvMsgS( sd, buffer);
 				
-				/*
-				if( buf_size == -1) {
-					perror("Server: receive");
-					exit(1);
-				}
-				
-				else */
 				if( buf_size == 0) {
 					getpeername( sd, (struct sockaddr*)&addr_in, (socklen_t*)&sin_size);
 					printf("Disconnected: IP: %s PORT: %d\n", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
-
+					whoIsConnected = 0;
 					close(sd);
 					client_socket[i] = 0;
 				}
 				else {
-					//int size = buf_size;// -1;
-					//buffer[size] = '\0';
 					printf("Received: %s from IP: %s PORT: %d\n", buffer, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
-					//buffer[size] = '\n';
-					//buffer[size] = '\0';
-					//send(sd, buffer, strlen(buffer), 0);
-					sendMsg(sd, buffer, strlen(buffer));
+					if(whoIsConnected == 0 && strcmp(buffer, "login1") == 0) {
+						sprintf(buffer, "connected");
+						whoIsConnected = 1;
+						printf("Professor conectado!\n");
+					}
+					else if(whoIsConnected == 0 && strcmp(buffer, "login2") == 0) {
+						sprintf(buffer, "connected");
+						whoIsConnected = 2;
+						printf("Aluno conectado!\n");
+					}
+					else {
+						sprintf(buffer, "nope");
+					}
+					
+					if(whoIsConnected != 0) {
+						executeMenu(buffer);
+					}
+					
+					sendMsg(sd, buffer);
 				}
 			}
 		}

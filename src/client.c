@@ -1,94 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include <netdb.h>
-#include <unistd.h>
-#include <signal.h>
-#include <errno.h>
-
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-
-#define ADDR "localhost"
-#define PORT "54321"
-#define QUEUE 10
-#define MAXDATASIZE 2048
-#define TRUE 1
-#define FALSE 0
-
-int setupConnection() {
-	int sockfd, status;
-	struct addrinfo hints, *servinfo, *p;
-	
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_INET; //sets IPv4 use
-	hints.ai_socktype = SOCK_STREAM; //TCP socket type
-	hints.ai_flags = AI_PASSIVE;
-
-	if( (status = getaddrinfo(ADDR, PORT, &hints, &servinfo)) != 0){
-		fprintf(stderr, "Client: GetAddrInfo error: %s\n", gai_strerror(status));
-		exit(1);
-	}
-
-	// loop through all the results and connect to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next) {
-		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("Client: socket");
-			continue;
-		}
-
-		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
-			perror("Client: connect");
-			continue;
-		}
-
-		break;
-	}
-	
-	if (p == NULL) {
-		fprintf(stderr, "Client: Failed to connect\n");
-		exit(1);
-	}
-	
-	printf("Connected: Socket FD: %d IP: %s PORT: %d\n", sockfd, inet_ntoa((((struct sockaddr_in*)p->ai_addr)->sin_addr)), ntohs((((struct sockaddr_in*)p->ai_addr)->sin_port)));
-
-	freeaddrinfo(servinfo);
-	
-	return sockfd;
-}
-
-void sendMsg(int sock, char* msg, int msgLen){
-	if( send(sock, msg, strlen(msg), 0) == -1) {
-		perror("Client: send");
-	}
-}
-
-void recvMsg(int sock, char* buffer) {
-	int buf_size;
-	
-	buffer[0] = '\0';
-	
-	buf_size = recv(sock, buffer, MAXDATASIZE -1, 0);
-	
-	if( buf_size == -1) {
-		perror("Server: receive");
-		exit(1);
-	}
-	else if( buf_size == 0) {
-		close(sock);
-	}
-	else {
-		//int size = buf_size -1;
-		buffer[buf_size] = '\0';
-	}
-}
+#include "includes.h"
 
 int main() {
 	int sockfd, buf_size;
@@ -115,12 +25,12 @@ int main() {
 		
 		switch(persConn){
 			case 1:		
-				sendMsg(sockfd, login, strlen(login));
+				sendMsg(sockfd, login);
 				recvMsg(sockfd, buffer);
 				printf("Connected: %d\n", connected);
 				printf("Client received %s from server\n",buffer);
 				
-				if(strcmp(buffer,"login1") == 0) {
+				if(strcmp(buffer,"connected") == 0) {
 					printf("Bem-vindo professor!\n");
 					printf("%s", profMenu);
 					printf("Opcao: ");
@@ -134,12 +44,12 @@ int main() {
 				
 				break;
 			case 2:
-				sendMsg(sockfd, login, strlen(login));
+				sendMsg(sockfd, login);
 				recvMsg(sockfd, buffer);
 				printf("Connected: %d\n", connected);
 				printf("Client received %s from server\n",buffer);
 				
-				if(strcmp(buffer,"login2") == 0) {
+				if(strcmp(buffer,"connected") == 0) {
 					printf("Bem-vindo aluno!\n");
 					printf("%s", studMenu);
 					printf("Opcao: ");
@@ -174,7 +84,7 @@ int main() {
 		char opMsg[5];
 		n = sprintf(opMsg, "op%d", op);
 		
-		sendMsg(sockfd, opMsg, strlen(opMsg));
+		sendMsg(sockfd, opMsg);
 		recvMsg(sockfd, buffer);
 		
 		printf("Client received %s from server\n",buffer);
