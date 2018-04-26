@@ -80,7 +80,8 @@ int setupConnectionS(int max_clients, int* client_socket) {
 
 void sendMsg(int sock, char* msg) {
 	if( send(sock, msg, strlen(msg), 0) == -1) {
-		perror("Client: send");
+		perror("Server: send");
+		exit(1);
 	}
 }
 
@@ -105,7 +106,7 @@ int recvMsgS(int sock, char* buffer) {
 	return buf_size;
 }
 
-void executeMenu(int whoIsConnected, char* buffer, lista *l, int sockfd, messages *msg) {
+void executeMenu(int whoIsConnected, char* buffer, lista *l, int sockfd) {
 	
 	if(strcmp(buffer,"op1") == 0) {
 		
@@ -123,7 +124,86 @@ void executeMenu(int whoIsConnected, char* buffer, lista *l, int sockfd, message
 		
 	}
 	else if(strcmp(buffer,"op6") == 0) {
-		sendMsg(sockfd, *msg.ask_code);
+		int size;
+		int end = 0;
+		char codigo[10];
+		char sala[10];
+		char horarios[50];
+		char ementa[255];
+		char titulo[100];
+		
+		do {
+			printf("execMenu\n");
+			printf("fd: %d\n", sockfd);
+			sprintf(buffer, "codigo da disciplina: ");
+			sendMsg(sockfd, buffer);
+			sleep(2);
+			size = recvMsgS(sockfd, buffer);
+			
+			if(size > 10) {
+				sprintf(buffer, "codigo da disciplina com tamanho invalido! (max 10)\n");
+				sendMsg(sockfd, buffer);
+			}
+			else {
+				//Disciplina válida
+				sprintf(codigo,"%s",buffer);
+				
+				sprintf(buffer, "sala: ");
+				sendMsg(sockfd, buffer);
+				size = recvMsgS(sockfd, buffer);
+				
+				if(size > 10) {
+					sprintf(buffer, "sala com tamanho invalido! (max 10)\n");
+					sendMsg(sockfd, buffer);
+				}
+				else {
+					//Sala válida
+					sprintf(sala,"%s",buffer);
+				
+					sprintf(buffer, "horarios: ");
+					sendMsg(sockfd, buffer);
+					size = recvMsgS(sockfd, buffer);
+					
+					if(size > 50) {
+						sprintf(buffer, "horario com tamanho invalido! (max 50)\n");
+						sendMsg(sockfd, buffer);
+					}
+					else {
+						//Horario válido
+						sprintf(horarios,"%s",buffer);
+				
+						sprintf(buffer, "ementa: ");
+						sendMsg(sockfd, buffer);
+						size = recvMsgS(sockfd, buffer);
+						
+						if(size > 255) {
+							sprintf(buffer, "ementa com tamanho invalido! (max 255)\n");
+							sendMsg(sockfd, buffer);
+						}
+						else {
+							//Ementa valida
+							sprintf(ementa,"%s",buffer);
+					
+							sprintf(buffer, "titulo: ");
+							sendMsg(sockfd, buffer);
+							size = recvMsgS(sockfd, buffer);
+							if(size > 100) {
+								sprintf(buffer, "titulo com tamanho invalido! (max 100)\n");
+								sendMsg(sockfd, buffer);
+							}
+							else {
+								//Titulo valido
+								sprintf(titulo,"%s",buffer);
+								sprintf(buffer, "end");
+								sendMsg(sockfd, buffer);
+								end = 1;
+							}
+						}
+					}
+				}
+			}
+			
+		} while(!end);
 		
 	}
 	else if(strcmp(buffer,"op7") == 0) {

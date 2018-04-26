@@ -45,6 +45,7 @@ int setupConnection() {
 void sendMsg(int sock, char* msg) {
 	if( send(sock, msg, strlen(msg), 0) == -1) {
 		perror("Client: send");
+		exit(1);
 	}
 }
 
@@ -56,7 +57,7 @@ void recvMsg(int sock, char* buffer) {
 	buf_size = recv(sock, buffer, MAXDATASIZE -1, 0);
 	
 	if( buf_size == -1) {
-		perror("Server: receive");
+		perror("Client: receive");
 		exit(1);
 	}
 	else if( buf_size == 0) {

@@ -27,7 +27,7 @@ int main() {
 			case 1:		
 				sendMsg(sockfd, login);
 				recvMsg(sockfd, buffer);
-				printf("Connected: %d\n", connected);
+				//printf("Connected: %d\n", connected);
 				printf("Client received %s from server\n",buffer);
 				
 				if(strcmp(buffer,"connected") == 0) {
@@ -46,7 +46,7 @@ int main() {
 			case 2:
 				sendMsg(sockfd, login);
 				recvMsg(sockfd, buffer);
-				printf("Connected: %d\n", connected);
+				//printf("Connected: %d\n", connected);
 				printf("Client received %s from server\n",buffer);
 				
 				if(strcmp(buffer,"connected") == 0) {
@@ -80,6 +80,7 @@ int main() {
 	}
 	
 	while(connected) {
+		int execCmd = FALSE;
 		int n;
 		char opMsg[5];
 		n = sprintf(opMsg, "op%d", op);
@@ -89,13 +90,35 @@ int main() {
 		
 		printf("Client received %s from server\n",buffer);
 		
-		if(persConn == 1){
+		if(strcmp(buffer,"cmd") == 0) {
+			execCmd = TRUE;
+			printf("entrei\n");
+			sleep(2);
+			do{
+				recvMsg(sockfd, buffer);
+				
+				if(strcmp(buffer,"end") == 0){
+					execCmd = FALSE;
+				}
+				else {
+					printf("%s",buffer);
+					fgets(buffer, MAXDATASIZE, stdin);
+					
+					buffer[strlen(buffer) -1] = '\0';
+					
+					sendMsg(sockfd, buffer);
+				}
+				
+			}while(execCmd);
+		}
+		
+		if(persConn == 1 && !execCmd){
 			//system("clear");
 			printf("%s", profMenu);
 			printf("Opcao: ");
 			scanf("%d", &op);
 		}
-		else if(persConn == 2){
+		else if(persConn == 2 && !execCmd){
 			//system("clear");
 			printf("%s", studMenu);
 			printf("Opcao: ");

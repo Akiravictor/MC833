@@ -94,25 +94,27 @@ int main(){
 				else {
 					printf("Received: %s from IP: %s PORT: %d\n", buffer, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
+					if(whoIsConnected != 0) {
+						printf("aee\n");
+						//sprintf(buffer, "cmd");
+						printf("%s",buffer);
+						sendMsg(sd,"cmd");
+						sleep(2);
+						executeMenu(whoIsConnected, buffer, &l, sd);
+					}
+					
 					if(whoIsConnected == 0 && strcmp(buffer, "login1") == 0) {
 						sprintf(buffer, "connected");
 						whoIsConnected = 1;
 						printf("Professor conectado!\n");
+						sendMsg(sd, "connected");
 					}
 					else if(whoIsConnected == 0 && strcmp(buffer, "login2") == 0) {
 						sprintf(buffer, "connected");
 						whoIsConnected = 2;
 						printf("Aluno conectado!\n");
+						sendMsg(sd, "connected");
 					}
-					else {
-						sprintf(buffer, "nope");
-					}
-					
-					if(whoIsConnected != 0) {
-						executeMenu(whoIsConnected, buffer, &l, sd, &msg);
-					}
-					
-					sendMsg(sd, buffer);
 				}
 			}
 		}
