@@ -28,6 +28,7 @@ client: makedir $(EXEC_CLIENT)
 server: makedir $(EXEC_SERVER)
 auto: makedir $(EXEC_AUTO)
 run_server: server
+	if pgrep server.exec; then pkill server.exec; fi
 	$(EXEC_SERVER)
 run_client: client
 	$(EXEC_CLIENT)
@@ -62,5 +63,3 @@ clean:
 	rm -rf $(EXEC_CLIENT) $(OBJECTS_CLIENT) $(EXEC_SERVER) $(OBJECTS_SERVER) $(OBJECTS_COMMON) $(EXEC_AUTO) $(OBJECTS_AUTO)
 	find . -iname *~ -exec rm -rf {} \;
 
-kill:
-	killall server.exec
