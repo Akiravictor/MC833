@@ -3,4 +3,6 @@
 
 #include "includes.h"
 
+#define ADDR "localhost"
+
 #endif

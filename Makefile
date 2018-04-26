@@ -59,7 +59,7 @@ $(OBJECTS_COMMON): $(OBJ_DIR)/common%.o : $(SRC_DIR)/common%.c
 	@$(CC) $(INC_FLAGS) $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf $(EXEC_CLIENT)  $(OBJECTS_CLIENT) $(EXEC_SERVER) $(OBJECTS_SERVER) $(OBJECTS_COMMON)
+	rm -rf $(EXEC_CLIENT) $(OBJECTS_CLIENT) $(EXEC_SERVER) $(OBJECTS_SERVER) $(OBJECTS_COMMON) $(EXEC_AUTO) $(OBJECTS_AUTO)
 	find . -iname *~ -exec rm -rf {} \;
 
 kill:

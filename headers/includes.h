@@ -24,7 +24,6 @@
 /* defines */
 #define PORT "54321"
 #define QUEUE 10
-#define ADDR "localhost"
 #define MAXDATASIZE 2048
 
 
