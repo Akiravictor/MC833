@@ -11,6 +11,7 @@ typedef struct disciplina{
   char sala[10];
   char horarios[50];
   char mensagem[255];
+  char ementa[255];
   char deleted;
   struct disciplina *next;
 } disciplina;
@@ -26,9 +27,9 @@ typedef struct lista{
 }lista;
 
 
-disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem);
+disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem, char *ementa);
 lista lista_constructor();
-void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem);
+void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem, char *ementa);
 void print_disc(disciplina d);
 void print_list(lista l);
 void change_message(lista *l, char *code, char *mensagem);
@@ -38,5 +39,8 @@ char *d_disc(lista *l, char *code);
 char *p_disc(disciplina d);
 char *p_list(lista l);
 char *c_message(lista *l, char *code, char *mensagem);
-char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem);
+char *c_ementa(lista *l, char *code, char *ementa);
+char *c_sala(lista *l, char *code, char *sala);
+char *c_horario(lista *l, char *code, char *horarios);
+char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem, char *ementa);
 #endif

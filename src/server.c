@@ -15,14 +15,14 @@ int main(){
   char buffer[MAXDATASIZE];
   int buf_size=0;
   messages msg = messages_constructor();
-  char *list, *delete, *code, *d_msg, *room, *hours;
+  char *list, *delete, *code, *d_msg, *room, *hours, *ementa;
   int connected;
   pid_t process;
   /* LISTA DE DISCIPLINAS */
   lista l = lista_constructor();
-  add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show");
-  add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos");
-  add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS");
+  add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show","Lab de redes fazemos labs legais");
+  add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos","Grafos, grafos, grafos");
+  add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS","Arquitetura de computadores");
 
   /////////////////////////////////////////////////////////////////////
 
@@ -83,7 +83,7 @@ int main(){
     exit(1);
   }
   while(1){
-    printf("server: waiting for connections...\n");
+    printf("server: waiting for the worms...\n");
 
     sin_size = sizeof client_addr;
 
@@ -100,7 +100,6 @@ int main(){
     }
     /* Parent */
     if(process == 0){
-      printf("SERVER_PROCESS: I am parent %d of %d\n",getpid(),process);
       close(incoming_fd);
       wait(NULL);
     }
@@ -117,10 +116,10 @@ int main(){
 
 	if(buf_size > 0){
 	  buffer[buf_size] = '\0';
-	  printf("server: received %s\n", buffer);
+	  printf("server: from %d .=. received %s\n", process, buffer);
 
 	  /* Exits */
-	  if(strcmp(buffer,"exit\r\n") == 0){
+	  if(strcmp(buffer,"exit\n") == 0){
 	    if(send(incoming_fd, NULL, 0, 0) == -1){
 	      perror("server: send");
 	    }
@@ -136,7 +135,7 @@ int main(){
 	      send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
 	      if(buf_size > 0){
 		buffer[buf_size] = '\0';
-		printf("server: received %s\n", buffer);
+		printf("server: from %d .=. received %s\n", process, buffer);
 
 		/* Exits */
 		if(strcmp(buffer,"exit\n") == 0){
@@ -164,7 +163,7 @@ int main(){
 	      send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
 	      if(buf_size > 0){
 		buffer[buf_size] = '\0';
-		printf("server: received %s\n", buffer);
+		printf("server: from %d .=. received %s\n", process, buffer);
 
 		/* Exits */
 		if(strcmp(buffer,"exit\n") == 0){
@@ -184,13 +183,13 @@ int main(){
 		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
 		  if(buf_size > 0){
 		    buffer[buf_size-1] = '\0';
-		    printf("server: received %s\n", buffer);
+		    printf("server: from %d .=. received %s\n", process, buffer);
 		    code = (char*)malloc((buf_size-1)*sizeof(char));
 		    strcpy(code,buffer);
 		    send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
 		    if(buf_size > 0){
 		      buffer[buf_size-1] = '\0';
-		      printf("server: received %s\n", buffer);
+		      printf("server: from %d .=. received %s\n", process, buffer);
 		      d_msg = c_message(&l,code,buffer);
 		      send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
 		    }
@@ -202,30 +201,38 @@ int main(){
 		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
 		  if(buf_size > 0){
 		    buffer[buf_size-1] = '\0';
-		    printf("server: received %s\n", buffer);
+		    printf("server: from %d .=. received %s\n", process, buffer);
 		    code = (char*)malloc((buf_size-1)*sizeof(char));
 		    strcpy(code,buffer);
 		    /* ask for room id */
 		    send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
 		    if(buf_size > 0){
 		      buffer[buf_size-1] = '\0';
-		      printf("server: received %s\n", buffer);
+		      printf("server: from %d .=. received %s\n", process, buffer);
 		      room = (char*)malloc((buf_size-1)*sizeof(char));
 		      strcpy(room,buffer);
 		      /* ask for class hours */
 		      send_and_receive(incoming_fd,msg.ask_hours,&buf_size,buffer);
 		      if(buf_size > 0){
 			buffer[buf_size-1] = '\0';
-			printf("server: received %s\n", buffer);
+			printf("server: from %d .=. received %s\n", process, buffer);
 			hours = (char*)malloc((buf_size-1)*sizeof(char));
 			strcpy(hours,buffer);
 			/* ask for msg */
 			send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
 			if(buf_size > 0){
 			  buffer[buf_size-1] = '\0';
-			  printf("server: received %s\n", buffer);
-			  d_msg = a_disciplina(&l,code,room,hours,buffer);
-			  send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
+			  printf("server: from %d .=. received %s\n", process, buffer);
+			  d_msg = (char*)malloc((buf_size-1)*sizeof(char));
+			  strcpy(d_msg,buffer);
+			  /* Ask for ementa */
+			  send_and_receive(incoming_fd,msg.ask_ementa,&buf_size,buffer);
+			  if(buf_size > 0){
+			    buffer[buf_size-1] = '\0';
+			    printf("server: from %d .=. received %s\n", process, buffer);
+			    ementa = a_disciplina(&l,code,room,hours,d_msg,buffer);
+			    send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
+			  }
 			}
 		      }
 		    }
@@ -236,7 +243,7 @@ int main(){
 		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
 		  if(buf_size > 0){
 		    buffer[buf_size-1] = '\0';
-		    printf("server: received %s\n", buffer);
+		    printf("server: from %d .=. received %s\n", process, buffer);
 		    delete = d_disc(&l,buffer);
 		    send_and_receive(incoming_fd,delete,&buf_size,buffer);
 		  }

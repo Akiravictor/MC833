@@ -19,22 +19,23 @@ lista lista_constructor(){
  
 
 
-disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem){
+disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *mensagem, char *ementa){
   disciplina obj;
   strcpy(obj.code,code);
   strcpy(obj.sala,sala);
   strcpy(obj.horarios,horarios);
   strcpy(obj.mensagem,mensagem);
+  strcpy(obj.ementa,ementa);
   obj.deleted = 'n';
   obj.next = NULL;
   //printf("%s %s %s %s\n",obj.code,obj.sala,obj.horarios,obj.mensagem);
   return obj;
 }
 
-void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem){
+void add_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem, char *ementa){
   disciplina *d = malloc(sizeof(disciplina));
 
-  *d = disciplina_constructor(code,sala,horarios,mensagem);
+  *d = disciplina_constructor(code,sala,horarios,mensagem, ementa);
 
 
   /* first node */
@@ -124,7 +125,7 @@ void delete_disc(lista *l, char *code){
 char *p_disc(disciplina d){
   char *a = (char*)malloc(300*sizeof(char));
   if(d.deleted == 'n'){
-    sprintf(a,"\nCódigo: %s\nSala: %s\nHorário: %s\nMensagem: %s\n",d.code,d.sala,d.horarios,d.mensagem);
+    sprintf(a,"\nCode: %s\nRoom: %s\nHours: %s\nMessage: %s\nEmenta: %s\n",d.code,d.sala,d.horarios,d.mensagem, d.ementa);
     printf("SERVER: %s\n",a);
   }
   return a;
@@ -214,11 +215,105 @@ char *c_message(lista *l, char *code, char *mensagem){
 
 }
 
-char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem){
+char *c_ementa(lista *l, char *code, char *ementa){
+  int found = 0;
+  char *ret = (char*)malloc(100*sizeof(char));
+  if(l->size){
+    l->iterator = l->head;
+    for(int i=0; i< l->real_size; i++){
+      if( strcmp(l->iterator->code , code) == 0){
+	strcpy(l->iterator->ementa , ementa);
+	found = 1;
+	printf("SERVER: Changed the ementa inside discipline %s\n",code);
+	sprintf(ret,"Changed the ementa inside discipline %s\n",code);
+      }
+
+	if(l->iterator->next != NULL)
+	  l->iterator = l->iterator->next;
+
+    }
+    if(!found){
+      printf("SERVER: Discipline %s not found\n",code);
+      sprintf(ret,"Discipline %s not found\n",code);
+    }
+  }
+  else{
+    printf("SERVER: There is no disciplines yet\n");
+    sprintf(ret,"There is no disciplines yet\nTry adding one with 'add' command\n");
+  }
+  strcat(ret,"\nPress enter to go back\n");
+  return ret;
+
+}
+
+char *c_sala(lista *l, char *code, char *sala){
+  int found = 0;
+  char *ret = (char*)malloc(100*sizeof(char));
+  if(l->size){
+    l->iterator = l->head;
+    for(int i=0; i< l->real_size; i++){
+      if( strcmp(l->iterator->code , code) == 0){
+	strcpy(l->iterator->sala , sala);
+	found = 1;
+	printf("SERVER: Changed the room inside discipline %s\n",code);
+	sprintf(ret,"Changed the room inside discipline %s\n",code);
+      }
+
+	if(l->iterator->next != NULL)
+	  l->iterator = l->iterator->next;
+
+    }
+    if(!found){
+      printf("SERVER: Discipline %s not found\n",code);
+      sprintf(ret,"Discipline %s not found\n",code);
+    }
+  }
+  else{
+    printf("SERVER: There is no disciplines yet\n");
+    sprintf(ret,"There is no disciplines yet\nTry adding one with 'add' command\n");
+  }
+  strcat(ret,"\nPress enter to go back\n");
+  return ret;
+
+}
+
+char *c_horario(lista *l, char *code, char *horarios){
+  int found = 0;
+  char *ret = (char*)malloc(100*sizeof(char));
+  if(l->size){
+    l->iterator = l->head;
+    for(int i=0; i< l->real_size; i++){
+      if( strcmp(l->iterator->code , code) == 0){
+	strcpy(l->iterator->horarios , horarios);
+	found = 1;
+	printf("SERVER: Changed the hours inside discipline %s\n",code);
+	sprintf(ret,"Changed the hours inside discipline %s\n",code);
+      }
+
+	if(l->iterator->next != NULL)
+	  l->iterator = l->iterator->next;
+
+    }
+    if(!found){
+      printf("SERVER: Discipline %s not found\n",code);
+      sprintf(ret,"Discipline %s not found\n",code);
+    }
+  }
+  else{
+    printf("SERVER: There is no disciplines yet\n");
+    sprintf(ret,"There is no disciplines yet\nTry adding one with 'add' command\n");
+  }
+  strcat(ret,"\nPress enter to go back\n");
+  return ret;
+
+}
+
+
+char *a_disciplina(lista *l, char *code, char *sala, char *horarios, char *mensagem, char *ementa){
   disciplina *d = malloc(sizeof(disciplina));
   char *ret = (char*)malloc(100*sizeof(char));
   
-  *d = disciplina_constructor(code,sala,horarios,mensagem);
+  *d = disciplina_constructor(code,sala,horarios,mensagem, ementa);
 
 
   /* first node */

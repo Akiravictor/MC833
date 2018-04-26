@@ -21,22 +21,27 @@ void *get_in_addr(struct sockaddr *sa){
 
 messages messages_constructor(){
   messages obj;
-  /* Messages */
-  char welcome[] = "Welcome to VigAkira™ school system.\nAre you a student or professor?\n'exit' closes connection\n";
+  /* Messages */    
+  char welcome[] = "|===================================|\n Welcome to VigAkira™ school system.\n Enter the command between brackets.\n Are you...\n a student [student]\n a professor [professor]\n Exit VigAkira™ school system [exit]\n";
   char error_persona[] = "Please enter 'professor' or 'student'\n";
   
   
- char student[] = "Welcome, student!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Close connection [exit]\n\n";
+ char student[] = "|===================================|\n Welcome, student!\n What do you want to do?\n Enter the command between brackets\n\n > List all disciplines [list]\n > Close connection [exit]\n\n";
 
-  char prof[] = "Welcome, professor!\nWhat do you want to do? Enter the command between brackets\n\n> List all disciplines [list]\n> Change message of a specific discipline [change]\n> Add discipline [add]\n> Delete discipline [delete]\n> Close connection [exit]\n\n";
-  char ask_code[] = "Please enter the discipline code, e.g. 'MC833'\n";
-  char ask_msg[] = "Please enter the new message\n";
-  char ask_room[] = "Please enter the classrom info, e.g. 'CB 15'\n";
-  char ask_hours[] = "Please enter the class hours, e.g. 'ter 10am'\n";
+  char prof[] = "|===================================|\n Welcome, professor!\n What do you want to do?\n Enter the command between brackets\n\n > List all disciplines [list]\n > Change message of a specific discipline [change]\n > Add discipline [add]\n > Delete discipline [delete]\n > Close connection [exit]\n\n";
+  char ask_code[] = "|===================================|\n Please enter the discipline code\n e.g. 'MC833'\n";
+  char ask_msg[] = "|===================================|\n Please enter the new message\n";
+  char ask_room[] = "|===================================|\n Please enter the classrom info\n e.g. 'CB 15'\n";
+  char ask_hours[] = "|===================================|\n Please enter the class hours\n e.g. 'ter 10am'\n";
+  char ask_ementa[] = "|===================================|\n Please enter the class ementa\n e.g. 'laboratório de redes'\n";
   
   /* ask for d room */
   obj.ask_room = malloc(strlen(ask_room)*sizeof(char));
   strcpy(obj.ask_room,ask_room);
+
+  /* ask for d ementa */
+  obj.ask_ementa = malloc(strlen(ask_ementa)*sizeof(char));
+  strcpy(obj.ask_ementa,ask_ementa);
 
   /* ask for d hours */
   obj.ask_hours = malloc(strlen(ask_hours)*sizeof(char));
