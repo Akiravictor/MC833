@@ -1,8 +1,10 @@
 #ifndef DISCIPLINAS_H
 #define DISCIPLINAS_H
 
-#include "includes.h"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 
 /* structs  */
@@ -26,7 +28,7 @@ typedef struct lista{
   disciplina *iterator;
   int real_size;
   int size;
-}lista;
+} lista;
 
 
 disciplina disciplina_constructor(char *code, char *sala, char *horarios, char *ementa, char *mensagem, char *titulo);

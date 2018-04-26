@@ -20,9 +20,10 @@
 #include <netinet/in.h>
 
 /* Custom libs */
+#include "disciplinas.h"
 #include "client.h"
 #include "server.h"
-#include "disciplinas.h"
+
 
 /* defines */
 #define ADDR "localhost"

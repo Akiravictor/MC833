@@ -105,7 +105,7 @@ int recvMsgS(int sock, char* buffer) {
 	return buf_size;
 }
 
-void executeMenu(char* buffer) {
+void executeMenu(int whoIsConnected, char* buffer, lista *l, int sockfd, messages *msg) {
 	
 	if(strcmp(buffer,"op1") == 0) {
 		
@@ -123,6 +123,7 @@ void executeMenu(char* buffer) {
 		
 	}
 	else if(strcmp(buffer,"op6") == 0) {
+		sendMsg(sockfd, *msg.ask_code);
 		
 	}
 	else if(strcmp(buffer,"op7") == 0) {

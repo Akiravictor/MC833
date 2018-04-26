@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include "includes.h"
+#include "disciplinas.h"
 
 
 /* Structs */
@@ -21,7 +22,7 @@ void sigchld_handler(int s);
 int setupConnectionS(int max_clients, int* client_socket);
 void sendMsg(int sock, char* msg);
 int recvMsgS(int sock, char* buffer);
-void executeMenu(char* buffer);
+void executeMenu(int whoIsConnected, char* buffer, lista *l, int sockfd, messages *msg);
 messages messages_constructor();
 
 #endif

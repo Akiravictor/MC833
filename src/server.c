@@ -15,6 +15,14 @@ int main(){
 	socklen_t sin_size;
 	pid_t process;
 	fd_set readfds;
+	
+	char *list, *delete, *code, *d_msg, *room, *hours;
+	lista l = lista_constructor();
+	messages msg = messages_constructor();
+	
+	add_disciplina(&l,"MC833","IC 352","qui 10h am","Programacao em redes","o prof edmundo é show", "Lab de redes");
+	add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","Grafos e mais grafos","tá O(n) pelo menos", "Analise 2");
+	add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","processadores","MIIIIIPPPPPSSSS","Arquitetura");
 
 	master_socket = setupConnectionS(max_clients, client_socket);
 
@@ -101,7 +109,7 @@ int main(){
 					}
 					
 					if(whoIsConnected != 0) {
-						executeMenu(buffer);
+						executeMenu(whoIsConnected, buffer, &l, sd, &msg);
 					}
 					
 					sendMsg(sd, buffer);
