@@ -1,8 +1,7 @@
 #include "disciplinas.h"
 
-/* private funcs headers */
-void remove_head(lista *l);
-void remove_tail(lista *l);
+
+/* comentarios no disciplinas.h */
 
 /* funcs body */
 

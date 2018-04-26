@@ -5,6 +5,7 @@
 
 
 /* Structs */
+/* Essa struct foi feita para facilitar o envio de mensagens padrão do servidor para o cliente, visto que strings em C é algo com potencial para dar problema. */
 typedef struct messages{
   char *welcome;
   char *error_persona;
@@ -20,6 +21,9 @@ typedef struct messages{
 /* Headers */
 void sigchld_handler(int s);
 void *get_in_addr(struct sockaddr *sa);
+
+/* Função que retorna a struct com todas as mensagens padrões definidas */
 messages messages_constructor();
+/* Funçao que envia e recebe strings servidor-cliente */
 void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer);
 #endif

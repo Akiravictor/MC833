@@ -18,7 +18,10 @@ int main(){
   char *list, *delete, *code, *d_msg, *room, *hours, *ementa;
   int connected;
   pid_t process;
+
+  system("clear");
   /* LISTA DE DISCIPLINAS */
+  /* inicia a lista ligada com 3 disciplinas */
   lista l = lista_constructor();
   add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show","Lab de redes fazemos labs legais");
   add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos","Grafos, grafos, grafos");
@@ -104,7 +107,6 @@ int main(){
       wait(NULL);
     }
     else{
-      printf("SERVER_PROCESS: I am child %d of %d\n",getpid(),getppid());
 
       //Converts IPv4 and IPv6 addresses from binary to text form
       inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*) &client_addr),s, sizeof s);
