@@ -76,14 +76,16 @@ messages messages_constructor(){
 }
 
 void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer){
-
+  //Send message in string to socket FD specified in incoming_fd
   if(send(incoming_fd, string ,strlen(string) , 0) == -1){
     perror("server: send");
   }
+  //Waits for message incoming from the socket FD specified in incoming_fd
   else if( (*buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
     perror("server: receive");
     exit(1);
   }
+  //If the message has size 0 it means that it received a close request
   if(*buf_size == 0){
    close(incoming_fd);
    exit(0);
