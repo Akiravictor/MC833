@@ -135,10 +135,10 @@ void executeMenu(int whoIsConnected, char* buffer, lista *l, int sockfd) {
 		do {
 			printf("execMenu\n");
 			printf("fd: %d\n", sockfd);
-			sprintf(buffer, "codigo da disciplina: ");
-			sendMsg(sockfd, buffer);
-			sleep(2);
+			sendMsg(sockfd, "codigo da disciplina: ");
+			printf("Message sent!\n");
 			size = recvMsgS(sockfd, buffer);
+			printf("Recebi %s\n", buffer);
 			
 			if(size > 10) {
 				sprintf(buffer, "codigo da disciplina com tamanho invalido! (max 10)\n");

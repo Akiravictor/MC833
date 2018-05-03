@@ -95,12 +95,17 @@ int main(){
 					printf("Received: %s from IP: %s PORT: %d\n", buffer, inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
 
 					if(whoIsConnected != 0) {
+						char op[5];
 						printf("aee\n");
 						//sprintf(buffer, "cmd");
-						printf("%s",buffer);
+						sprintf(op,"%s",buffer);
 						sendMsg(sd,"cmd");
-						sleep(2);
-						executeMenu(whoIsConnected, buffer, &l, sd);
+						printf("sent cmd to client!\n");
+						printf("received from client: %s\n", buffer);
+						printf("Op received: %s\n", op);
+						buf_size = recvMsgS(sd, buffer);
+						
+						executeMenu(whoIsConnected, op, &l, sd);
 					}
 					
 					if(whoIsConnected == 0 && strcmp(buffer, "login1") == 0) {
