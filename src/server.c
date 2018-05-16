@@ -304,17 +304,20 @@ int main(void)
 			int op_done = 0;
 			
 			memset(code, '\0', sizeof code);
+			memset(op, '\0', sizeof op);
 			
 			printf("DEBUG: DEL confirmed\n");
 			
 			for(i = 4; i < strlen(buf); i++){
+				printf("buf[%d]: %c\n", i, buf[i]);
+				
 				if(read_op == 1){
 					op[j] = buf[i];
 					j++;
 					
 					if(i == (op_strt + 2)){
 					
-						op[op_strt] = '\0';
+						op[op_strt + 1] = '\0';
 						read_op = 0;
 						op_done = 1;
 						j = 0;
@@ -323,7 +326,6 @@ int main(void)
 				}
 				
 				if(op_done == 1){
-					//printf("%s\n", op);
 					if(strcmp(op, "COD") == 0){
 						code[j] = buf[i];
 					}
@@ -333,13 +335,6 @@ int main(void)
 					}
 
 					j++;
-					
-					if(buf[i] == '\0'){
-						read_op = 1;
-						op_strt = i + 1;
-						op_done = 0;
-						j = 0;
-					}
 					
 				}
 				
