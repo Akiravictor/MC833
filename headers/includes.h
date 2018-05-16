@@ -22,9 +22,13 @@
 #include "disciplinas.h"
 
 /* defines */
+#define ADDR "localhost"
 #define PORT "54321"
 #define QUEUE 10
 #define MAXDATASIZE 2048
+
+#define TRUE 1
+#define FALSE 0
 
 
 #endif

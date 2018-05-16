@@ -25,5 +25,5 @@ void *get_in_addr(struct sockaddr *sa);
 /* Função que retorna a struct com todas as mensagens padrões definidas */
 messages messages_constructor();
 /* Funçao que envia e recebe strings servidor-cliente */
-void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer);
+void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer, struct sockaddr *dest_addr, socklen_t addrlen);
 #endif

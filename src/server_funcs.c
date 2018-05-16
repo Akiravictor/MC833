@@ -1,4 +1,4 @@
-#include "includes.h"
+#include "../headers/includes.h"
 
 /* comentarios gerais no server.h */
 
@@ -77,14 +77,16 @@ messages messages_constructor(){
 
   return obj;
 }
-
-void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer){
+/*
+void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer, struct sockaddr *dest_addr, socklen_t addrlen){
   //Send message in string to socket FD specified in incoming_fd
-  if(send(incoming_fd, string ,strlen(string) , 0) == -1){
+  int len = strlen(string);
+  
+  if(sendto(incoming_fd, string ,strlen(string) , 0, dest_addr, addrlen) == -1){
     perror("server: send");
   }
   //Waits for message incoming from the socket FD specified in incoming_fd
-  else if( (*buf_size = recv(incoming_fd, buffer, MAXDATASIZE-1, 0)) == -1){
+  else if( (*buf_size = recvfrom(incoming_fd, buffer, MAXDATASIZE-1, 0, dest_addr, addrlen)) == -1){
     perror("server: receive");
     exit(1);
   }
@@ -94,3 +96,4 @@ void send_and_receive(int incoming_fd, char *string, int *buf_size, char *buffer
    exit(0);
   }
 }
+*/

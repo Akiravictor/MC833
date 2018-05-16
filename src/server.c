@@ -1,266 +1,366 @@
-#include "includes.h"
+/* libs */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netdb.h>
+#include <errno.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <time.h>
 
-int main(){
-  int status;
-  int sockfd;
-  int incoming_fd;
-  int yes=1;
-  struct sigaction sa;
-  struct addrinfo hints;
-  struct addrinfo *serverInfo;
-  struct addrinfo *p;
-  socklen_t sin_size;
-  struct sockaddr_storage client_addr;
-  char s[INET6_ADDRSTRLEN];
-  char buffer[MAXDATASIZE];
-  int buf_size=0;
-  messages msg = messages_constructor();
-  char *list, *delete, *code, *d_msg, *room, *hours, *ementa;
-  int connected;
-  pid_t process;
+/* Custom libs */
+#include "../headers/client.h"
+#include "../headers/server.h"
+#include "../headers/disciplinas.h"
 
-  system("clear");
-  /* LISTA DE DISCIPLINAS */
-  /* inicia a lista ligada com 3 disciplinas */
-  lista l = lista_constructor();
-  add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show","Lab de redes fazemos labs legais");
-  add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos","Grafos, grafos, grafos");
-  add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS","Arquitetura de computadores");
+#define ADDR "localhost"
+#define PORT "54321"
+#define QUEUE 10
+#define MAXDATASIZE 2048
 
-  /////////////////////////////////////////////////////////////////////
+#define TRUE 1
+#define FALSE 0
 
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET; //sets IPv4 use
-  hints.ai_socktype = SOCK_STREAM; //TCP socket type
-  hints.ai_flags = AI_PASSIVE;
 
-  //Setting up connection
-  if( (status = getaddrinfo(NULL, PORT, &hints, &serverInfo)) != 0){
-    fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-    exit(1);
-  }
+#define MAXBUFLEN 100
 
-  //Looping through the results and binding to the 1st possible
-  for(p = serverInfo; p != NULL; p = p->ai_next){
 
-    //Setting socket
-    if( (sockfd = socket(p->ai_family, p->ai_socktype,p->ai_protocol)) == -1){
-      perror("server: socket");
-      continue;
+int main(void)
+{
+    int sockfd;
+    struct addrinfo hints, *servinfo, *p;
+    int rv;
+    int numbytes;
+    struct sockaddr_storage their_addr;
+    char buf[MAXDATASIZE];
+    socklen_t addr_len;
+    char s[INET6_ADDRSTRLEN];
+	
+	lista l = lista_constructor();
+	add_disciplina(&l,"MC833","IC 352","qui 10h am","o prof edmundo é show","Lab de redes fazemos labs legais");
+	add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos","Grafos, grafos, grafos");
+	add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS","Arquitetura de computadores");
+
+	messages msg = messages_constructor();
+	char *list, *delete, *code, *d_msg, *room, *hours, *ementa;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE; // use my IP
+
+    if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+        return 1;
     }
 
-    //Letting the address/port being reusable
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
-      perror("setsockopt");
-      exit(1);
+    // loop through all the results and bind to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("listener: socket");
+            continue;
+        }
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("listener: bind");
+            continue;
+        }
+
+        break;
     }
 
-    //Binding process to port
-    if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1){
-      close(sockfd);
-      perror("server: bind");
-      continue;
+    if (p == NULL) {
+        fprintf(stderr, "listener: failed to bind socket\n");
+        return 2;
     }
 
-    break;
-  }
+    freeaddrinfo(servinfo);
 
-  freeaddrinfo(serverInfo);
+	while(1){
+		char op[4];
+		int i;
+		
+		memset(op, '\0', sizeof op);
+		
+		printf("listener: waiting to recvfrom...\n");
 
-  if(p == NULL){
-    fprintf(stderr, "server: failed to bind\n");
-    exit(1);
-  }
-
-  //Listen and wait for connections
-  if(listen(sockfd, QUEUE) == -1){
-    perror("server: listen");
-    exit(1);
-  }
-
-  sa.sa_handler = sigchld_handler; // reap all dead processes
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = SA_RESTART;
-  if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-    perror("sigaction");
-    exit(1);
-  }
-  while(1){
-    printf("server: waiting for the worms...\n");
-
-    sin_size = sizeof client_addr;
-
-
-    //Accepts connection
-    if( (incoming_fd = accept(sockfd, (struct sockaddr*)&client_addr, &sin_size)) == -1){
-      perror("server: accept");
-    }
-    connected = 1;
-    process = fork();
-    /* erro */
-    if(process < 0){
-      perror("Ih rapaz...\n");
-    }
-    /* Parent */
-    if(process == 0){
-      close(incoming_fd);
-      wait(NULL);
-    }
-    else{
-
-      //Converts IPv4 and IPv6 addresses from binary to text form
-      inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*) &client_addr),s, sizeof s);
-      printf("server: connected to %s\n", s);
-
-      /* Initial Message */
-      send_and_receive(incoming_fd,msg.welcome,&buf_size,buffer);
-      while(connected){
-
-	if(buf_size > 0){
-	  buffer[buf_size] = '\0';
-	  printf("server: from %d .=. received %s\n", process, buffer);
-
-	  /* Exits */
-	  if(strcmp(buffer,"exit\n") == 0){
-	    if(send(incoming_fd, NULL, 0, 0) == -1){
-	      perror("server: send");
-	    }
-	    close(incoming_fd);
-	    connected=0;
-	  }
-
-	  /* Student */
-	  else if(strcmp(buffer,"student\n") == 0){
-	    puts("server: student selected");
-	    while(connected){
-	      /* Student menu */
-	      send_and_receive(incoming_fd,msg.student,&buf_size,buffer);
-	      if(buf_size > 0){
-		buffer[buf_size] = '\0';
-		printf("server: from %d .=. received %s\n", process, buffer);
-
-		/* Exits */
-		if(strcmp(buffer,"exit\n") == 0){
-		  if(send(incoming_fd, NULL, 0, 0) == -1){
-		    perror("server: send");
-		  }
-		  close(incoming_fd);
-		  connected = 0;
+		addr_len = sizeof their_addr;
+		if ((numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1 , 0,
+			(struct sockaddr *)&their_addr, &addr_len)) == -1) {
+			perror("recvfrom");
+			exit(1);
 		}
-		/* [list] */
-		else if(strcmp(buffer,"list\n") == 0){
-		  list = p_list(l);
-		  send_and_receive(incoming_fd,list,&buf_size,buffer);
+		
+		printf("DEBUG: got packet from %s\n",
+		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s));
+		printf("DEBUG: packet is %d bytes long\n", numbytes);
+		buf[numbytes] = '\0';
+		printf("DEBUG: packet contains \"%s\"\n", buf);
+		
+		//Decode message
+		for(i = 0; i < 3; i++){
+			op[i] = buf[i];
 		}
+		op[4] = '\0';
+		
+		if(strcmp(op, "STD") == 0){
+			printf("DEBUG: student_confirmed\n");
+			sendto(sockfd, "MENU", 4, 0, (struct sockaddr *)&their_addr, addr_len);
+		}
+		else if(strcmp(op, "PRO") == 0){
+			printf("DEBUG: professor_confirmed\n");
+			sendto(sockfd, "MENU", 4, 0, (struct sockaddr *)&their_addr, addr_len);
+		}
+		else if(strcmp(op, "LST") == 0){
+			printf("DEBUG: LST confirmed\n");
+			list = p_list(l);
+			sprintf(buf, "%s", list);
+			sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)&their_addr, addr_len);
+		}
+		else if(strcmp(op, "CHG") == 0){
+			char code[10];
+			char message[255];
+			char op[4];
+			int i;
+			int j = 0;
+			int read_op = 1;
+			int op_strt = 4;
+			int op_done = 0;
+			
+			memset(code, '\0', sizeof code);
+			memset(message, '\0', sizeof message);
+			memset(op, '\0', sizeof op);
+			
+			printf("DEBUG: CHG confirmed\n");
+			
+			for(i = 4; i < strlen(buf); i++){
+				if(read_op == 1){
+					op[j] = buf[i];
+					j++;
+					
+					if(i == (op_strt + 2)){
+					
+						op[op_strt] = '\0';
+						read_op = 0;
+						op_done = 1;
+						j = 0;
+						i++;
+					}
+				}
+				
+				if(op_done == 1){
+					
+					if(strcmp(op, "COD") == 0){
+						code[j] = buf[i];
+					}
+					else if(strcmp(op, "MSG") == 0){
+						message[j] = buf[i];
+					}
+					
+					if(buf[i] == '|'){
+						code[j] = '\0';
 
-	      }
-	    }
-	  }
+					}
+					else if(buf[i] == '\0'){
+						message[j] = '\0';
+					}
 
-	  /* Professor */
-	  else if(strcmp(buffer,"professor\n") == 0){
-	    puts("server: professor selected");
-	    while(connected){
-	      /* Prof menu */
-	      send_and_receive(incoming_fd,msg.prof,&buf_size,buffer);
-	      if(buf_size > 0){
-		buffer[buf_size] = '\0';
-		printf("server: from %d .=. received %s\n", process, buffer);
+					j++;
+					
+					if(buf[i] == '|' || buf[i] == '\0'){
+						read_op = 1;
+						op_strt = i + 1;
+						op_done = 0;
+						j = 0;
+					}
+					
+				}
+				
+			} //End-for
+			
+			printf("DEBUG:\n\tCode: %s\n\tMessage: %s\n", code, message);
+			
+			d_msg = c_message(&l, code, message);
+			sprintf(buf, "%s", d_msg);
+			
+			sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)&their_addr, addr_len);
+			
+		}
+		else if(strcmp(op, "ADD") == 0){
+			char code[10];
+			char sala[10];
+			char horarios[50];
+			char message[255];
+			char ementa[255];
+			char op[4];
+			int i;
+			int j = 0;
+			int pipe_count = 0;
+			int read_op = 1;
+			int op_strt = 4;
+			int op_done = 0;
+			
+			memset(code, '\0', sizeof code);
+			memset(sala, '\0', sizeof sala);
+			memset(horarios, '\0', sizeof horarios);
+			memset(message, '\0', sizeof message);
+			memset(ementa, '\0', sizeof ementa);
+			memset(op, '\0', sizeof op);
+			
+			printf("DEBUG: ADD confirmed\n");
+			
+			for(i = 4; i < strlen(buf); i++){
+				if(read_op == 1){
+					op[j] = buf[i];
+					j++;
+					
+					if(i == (op_strt + 2)){
+					
+						op[op_strt] = '\0';
+						read_op = 0;
+						op_done = 1;
+						j = 0;
+						i++;
+					}
+				}
+				
+				if(op_done == 1){
+					
+					if(strcmp(op, "COD") == 0){
+						code[j] = buf[i];
+					}
+					else if(strcmp(op, "ROM") == 0){
+						sala[j] = buf[i];
+					}
+					else if(strcmp(op, "HRS") == 0){
+						horarios[j] = buf[i];
+					}
+					else if(strcmp(op, "MSG") == 0){
+						message[j] = buf[i];
+					}
+					else if(strcmp(op, "EMT") == 0){
+						ementa[j] = buf[i];
+					}
+					
+					if(buf[i] == '|'){
+						if(pipe_count == 0){
+							code[j] = '\0';
+							pipe_count++;
+						}
+						else if(pipe_count == 1){
+							sala[j] = '\0';
+							pipe_count++;
+						}
+						else if(pipe_count == 2){
+							horarios[j] = '\0';
+							pipe_count++;
+						}
+						else if(pipe_count == 3){
+							message[j] = '\0';
+							pipe_count++;
+						}
+						
+					}
+					else if(buf[i] == '\0'){
+						ementa[j] = '\0';
+					}
 
-		/* Exits */
-		if(strcmp(buffer,"exit\n") == 0){
-		  if(send(incoming_fd, NULL, 0, 0) == -1){
-		    perror("server: send");
-		  }
-		  close(incoming_fd);
-		  connected = 0;
+					j++;
+					
+					if(buf[i] == '|' || buf[i] == '\0'){
+						read_op = 1;
+						op_strt = i + 1;
+						op_done = 0;
+						j = 0;
+					}
+					
+				}
+				
+			} //End-for
+			
+			
+			printf("DEBUG:\n\tCode: %s\n\tSala: %s\n\tHorarios: %s\n\tMessage: %s\n\tEmenta: %s\n", code, sala, horarios, message, ementa);
+			
+			d_msg = a_disciplina(&l, code, sala, horarios, message, ementa);
+			sprintf(buf, "%s", d_msg);
+			
+			sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)&their_addr, addr_len);
+			
 		}
-		/* [list] */
-		else if(strcmp(buffer,"list\n") == 0){
-		  list = p_list(l);
-		  send_and_receive(incoming_fd,list,&buf_size,buffer);
+		else if(strcmp(op, "DEL") == 0){
+			char code[10];
+			char op[4];
+			int i;
+			int j = 0;
+			int read_op = 1;
+			int op_strt = 4;
+			int op_done = 0;
+			
+			memset(code, '\0', sizeof code);
+			
+			printf("DEBUG: DEL confirmed\n");
+			
+			for(i = 4; i < strlen(buf); i++){
+				if(read_op == 1){
+					op[j] = buf[i];
+					j++;
+					
+					if(i == (op_strt + 2)){
+					
+						op[op_strt] = '\0';
+						read_op = 0;
+						op_done = 1;
+						j = 0;
+						i++;
+					}
+				}
+				
+				if(op_done == 1){
+					//printf("%s\n", op);
+					if(strcmp(op, "COD") == 0){
+						code[j] = buf[i];
+					}
+					
+					else if(buf[i] == '\0'){
+						code[j] = '\0';
+					}
+
+					j++;
+					
+					if(buf[i] == '\0'){
+						read_op = 1;
+						op_strt = i + 1;
+						op_done = 0;
+						j = 0;
+					}
+					
+				}
+				
+			} //End-for
+			
+			printf("DEBUG:\n\tCode: %s\n", code);
+			
+			d_msg = d_disc(&l, code);
+			sprintf(buf, "%s", d_msg);
+			
+			sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)&their_addr, addr_len);
+			
 		}
-		/* [change] */
-		else if(strcmp(buffer,"change\n") == 0){
-		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-		  if(buf_size > 0){
-		    buffer[buf_size-1] = '\0';
-		    printf("server: from %d .=. received %s\n", process, buffer);
-		    code = (char*)malloc((buf_size-1)*sizeof(char));
-		    strcpy(code,buffer);
-		    send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
-		    if(buf_size > 0){
-		      buffer[buf_size-1] = '\0';
-		      printf("server: from %d .=. received %s\n", process, buffer);
-		      d_msg = c_message(&l,code,buffer);
-		      send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
-		    }
-		  }
+		else{
+			printf("DEBUG: op not recognized\n");
 		}
-		/* [add] */
-		else if(strcmp(buffer,"add\n") == 0){
-		  /* ask for code */
-		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-		  if(buf_size > 0){
-		    buffer[buf_size-1] = '\0';
-		    printf("server: from %d .=. received %s\n", process, buffer);
-		    code = (char*)malloc((buf_size-1)*sizeof(char));
-		    strcpy(code,buffer);
-		    /* ask for room id */
-		    send_and_receive(incoming_fd,msg.ask_room,&buf_size,buffer);
-		    if(buf_size > 0){
-		      buffer[buf_size-1] = '\0';
-		      printf("server: from %d .=. received %s\n", process, buffer);
-		      room = (char*)malloc((buf_size-1)*sizeof(char));
-		      strcpy(room,buffer);
-		      /* ask for class hours */
-		      send_and_receive(incoming_fd,msg.ask_hours,&buf_size,buffer);
-		      if(buf_size > 0){
-			buffer[buf_size-1] = '\0';
-			printf("server: from %d .=. received %s\n", process, buffer);
-			hours = (char*)malloc((buf_size-1)*sizeof(char));
-			strcpy(hours,buffer);
-			/* ask for msg */
-			send_and_receive(incoming_fd,msg.ask_msg,&buf_size,buffer);
-			if(buf_size > 0){
-			  buffer[buf_size-1] = '\0';
-			  printf("server: from %d .=. received %s\n", process, buffer);
-			  d_msg = (char*)malloc((buf_size-1)*sizeof(char));
-			  strcpy(d_msg,buffer);
-			  /* Ask for ementa */
-			  send_and_receive(incoming_fd,msg.ask_ementa,&buf_size,buffer);
-			  if(buf_size > 0){
-			    buffer[buf_size-1] = '\0';
-			    printf("server: from %d .=. received %s\n", process, buffer);
-			    ementa = a_disciplina(&l,code,room,hours,d_msg,buffer);
-			    send_and_receive(incoming_fd,d_msg,&buf_size,buffer);
-			  }
-			}
-		      }
-		    }
-		  }
-		}
-		/* [delete] */
-		else if(strcmp(buffer,"delete\n") == 0){
-		  send_and_receive(incoming_fd,msg.ask_code,&buf_size,buffer);
-		  if(buf_size > 0){
-		    buffer[buf_size-1] = '\0';
-		    printf("server: from %d .=. received %s\n", process, buffer);
-		    delete = d_disc(&l,buffer);
-		    send_and_receive(incoming_fd,delete,&buf_size,buffer);
-		  }
-		}
-	      }
-	    }
-	  }
+		
 	}
-	/* Who are you?!?!?!?! */
-	if(connected)
-	  send_and_receive(incoming_fd,msg.error_persona,&buf_size,buffer);
-      }
-    }
-  }
-  puts("DEBUG: out");
-  return 0;
-}
+    
 
+    close(sockfd);
+
+    return 0;
+}

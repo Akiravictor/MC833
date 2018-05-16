@@ -1,4 +1,4 @@
-#include "disciplinas.h"
+#include "../headers/disciplinas.h"
 
 
 /* comentarios no disciplinas.h */
