@@ -1,37 +1,13 @@
-/* libs */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <netdb.h>
-#include <errno.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <time.h>
-
-/* Custom libs */
-#include "../headers/client.h"
-#include "../headers/server.h"
-#include "../headers/disciplinas.h"
-
-#define ADDR "localhost"
-#define PORT "54321"
-#define QUEUE 10
-#define MAXDATASIZE 2048
-
-#define TRUE 1
-#define FALSE 0
+#include "includes.h"
 
 
-#define MAXBUFLEN 100
+int main(void){
 
-
-int main(void)
-{
+  
+  long double timer[120];
+  int counter = 0;
+  clock_t t;
+	
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
     int rv;
@@ -46,8 +22,7 @@ int main(void)
 	add_disciplina(&l,"MC558","CB 17","ter qui 4h pm","tá O(n) pelo menos","Grafos, grafos, grafos");
 	add_disciplina(&l,"MC722","CB 5","ter qui 7h pm","MIIIIIPPPPPSSSS","Arquitetura de computadores");
 
-	messages msg = messages_constructor();
-	char *list, *delete, *code, *d_msg, *room, *hours, *ementa;
+	char *list, *d_msg;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
@@ -84,7 +59,7 @@ int main(void)
     freeaddrinfo(servinfo);
 
 	while(1){
-		char op[4];
+		char op[5];
 		int i;
 		
 		memset(op, '\0', sizeof op);
@@ -98,11 +73,11 @@ int main(void)
 			exit(1);
 		}
 		
-		printf("DEBUG: got packet from %s\n",
+		printf("SERVER: got packet from %s\n",
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s));
-		printf("DEBUG: packet is %d bytes long\n", numbytes);
+		printf("SERVER: packet is %d bytes long\n", numbytes);
 		buf[numbytes] = '\0';
-		printf("DEBUG: packet contains \"%s\"\n", buf);
+		printf("SERVER: packet contains \"%s\"\n", buf);
 		
 		//Decode message
 		for(i = 0; i < 3; i++){
@@ -111,15 +86,15 @@ int main(void)
 		op[4] = '\0';
 		
 		if(strcmp(op, "STD") == 0){
-			printf("DEBUG: student_confirmed\n");
+			printf("SERVER: student_confirmed\n");
 			sendto(sockfd, "MENU", 4, 0, (struct sockaddr *)&their_addr, addr_len);
 		}
 		else if(strcmp(op, "PRO") == 0){
-			printf("DEBUG: professor_confirmed\n");
+			printf("SERVER: professor_confirmed\n");
 			sendto(sockfd, "MENU", 4, 0, (struct sockaddr *)&their_addr, addr_len);
 		}
 		else if(strcmp(op, "LST") == 0){
-			printf("DEBUG: LST confirmed\n");
+			printf("SERVER: LST confirmed\n");
 			list = p_list(l);
 			sprintf(buf, "%s", list);
 			sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)&their_addr, addr_len);
@@ -138,7 +113,7 @@ int main(void)
 			memset(message, '\0', sizeof message);
 			memset(op, '\0', sizeof op);
 			
-			printf("DEBUG: CHG confirmed\n");
+			printf("SERVER: CHG confirmed\n");
 			
 			for(i = 4; i < strlen(buf); i++){
 				if(read_op == 1){
@@ -185,7 +160,7 @@ int main(void)
 				
 			} //End-for
 			
-			printf("DEBUG:\n\tCode: %s\n\tMessage: %s\n", code, message);
+			printf("SERVER:\n\tCode: %s\n\tMessage: %s\n", code, message);
 			
 			d_msg = c_message(&l, code, message);
 			sprintf(buf, "%s", d_msg);
@@ -286,7 +261,7 @@ int main(void)
 			} //End-for
 			
 			
-			printf("DEBUG:\n\tCode: %s\n\tSala: %s\n\tHorarios: %s\n\tMessage: %s\n\tEmenta: %s\n", code, sala, horarios, message, ementa);
+			printf("SERVER:\n\tCode: %s\n\tSala: %s\n\tHorarios: %s\n\tMessage: %s\n\tEmenta: %s\n", code, sala, horarios, message, ementa);
 			
 			d_msg = a_disciplina(&l, code, sala, horarios, message, ementa);
 			sprintf(buf, "%s", d_msg);
@@ -306,7 +281,7 @@ int main(void)
 			memset(code, '\0', sizeof code);
 			memset(op, '\0', sizeof op);
 			
-			printf("DEBUG: DEL confirmed\n");
+			printf("SERVER: DEL confirmed\n");
 			
 			for(i = 4; i < strlen(buf); i++){
 				printf("buf[%d]: %c\n", i, buf[i]);
@@ -340,7 +315,7 @@ int main(void)
 				
 			} //End-for
 			
-			printf("DEBUG:\n\tCode: %s\n", code);
+			printf("SERVER:\n\tCode: %s\n", code);
 			
 			d_msg = d_disc(&l, code);
 			sprintf(buf, "%s", d_msg);
@@ -349,7 +324,7 @@ int main(void)
 			
 		}
 		else{
-			printf("DEBUG: op not recognized\n");
+			printf("SERVER: op not recognized\n");
 		}
 		
 	}

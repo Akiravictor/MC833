@@ -1,386 +1,215 @@
 #include "includes.h"
 
-
-int main(){
-  int sockfd, numbytes;  
+int main(int argc, char *argv[])
+{
+  int connected = 0;
+  int menu = 0;
+  int wait_recv = 0;
+	
+  int sockfd;
+  struct addrinfo hints, *servinfo, *p;
+  struct sockaddr_storage their_addr;
+  int rv;
+  int numbytes;
   char buf[MAXDATASIZE];
-  char msg[MAXDATASIZE];
-  struct addrinfo hints, *serverInfo, *p;
-  int status;
-  double list[30], add[30], delete[30], change[30];
-  clock_t t;
- 
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET; //sets IPv4 use
-  hints.ai_socktype = SOCK_STREAM; //TCP socket type
-  hints.ai_flags = AI_PASSIVE;
+  messages msg = messages_constructor();
+  socklen_t addrlen;
 
-  if( (status = getaddrinfo(ADDR, PORT, &hints, &serverInfo)) != 0){
-    fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-    exit(1);
+  /* commands */
+  char code[10];
+  char message[255];
+  char sala[10];
+  char horarios[50];
+  char ementa[255];
+
+  long double timer;
+  clock_t t;
+	
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_DGRAM;
+
+  if ((rv = getaddrinfo(ADDR, PORT, &hints, &servinfo)) != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+    return 1;
   }
 
-  // loop through all the results and connect to the first we can
-  for(p = serverInfo; p != NULL; p = p->ai_next) {
+  // loop through all the results and make a socket
+  for(p = servinfo; p != NULL; p = p->ai_next) {
     if ((sockfd = socket(p->ai_family, p->ai_socktype,
 			 p->ai_protocol)) == -1) {
-      perror("client: socket");
+      perror("talker: socket");
       continue;
     }
-
-    if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-      close(sockfd);
-      perror("client: connect");
-      continue;
-    }
-
+		
     break;
   }
 
   if (p == NULL) {
-    fprintf(stderr, "Failed to connect\n");
+    fprintf(stderr, "talker: failed to create socket\n");
     return 2;
   }
 	
-  freeaddrinfo(serverInfo);
 	
-  while(1){
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-      perror("recv");
-      exit(1);
+  do{
+    if(connected == 0){
+      menu = 0;
+			
+      printf("%s", msg.welcome);
+
+      /* Auto select professor */
+      strcpy(buf,"professor");
+			
+			
+      if(strcmp(buf,"professor") == 0){
+	connected = 2;
+	sprintf(buf,"PRO");
+	printf("DEBUG: professor validado\n");
+      }
+			
+      if(connected != 0){
+	sendto(sockfd, buf, strlen(buf), 0, p->ai_addr, p->ai_addrlen);
+      }
+    }
+    else if(connected != 0){
+			
+      if(menu == 0){
+	addrlen = sizeof their_addr;
+				
+	if( (numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1, 0, (struct sockaddr*) &their_addr, &addrlen)) == -1){
+	  perror("recvfrom");
+	  exit(1);
+	}
+				
+	buf[numbytes] = '\0';
+	printf("DEBUG: received: %s\n\n", buf);
+      }
+			
+      if(strcmp(buf, "MENU") == 0){
+	if(connected == 1){
+	  printf("%s", msg.student);
+	}
+	else if(connected == 2){
+	  printf("%s", msg.prof);
+	}
+	menu = 1;
+      }
+			
+      if(menu == 1){
+
+	/* LIST */
+	puts("COMMAND LIST");
+	for(int i=0; i<30; i++){
+
+	  t = clock();
+	  
+	  sprintf(buf, "LST");
+	  wait_recv = 1;
+					
+	  if(connected != 0){
+	    sendto(sockfd, buf, strlen(buf), 0, p->ai_addr, p->ai_addrlen);
+	  }
+				
+	  if(connected != 0 && wait_recv == 1){
+					
+	    if( (numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1, 0, (struct sockaddr*) &their_addr, &addrlen)) == -1){
+	      perror("recvfrom");
+	      exit(1);
+	    }
+					
+	  }
+
+	  timer = ((long double)(clock() - t)/CLOCKS_PER_SEC);
+	  printf("%Lf\n",timer);
+	}
+
+	puts("COMMAND CHANGE");
+	for(int i=0; i<30; i++){
+	  	  t = clock();
+		  
+	  strcpy(code,"MC833");
+	  sprintf(message,"Message: %2d",i);
+	  sprintf(buf, "CHG|COD%s|MSG%s",code, message);
+	  wait_recv = 1;
+
+	  if(connected != 0){
+	    sendto(sockfd, buf, strlen(buf), 0, p->ai_addr, p->ai_addrlen);
+	  }
+				
+	  if(connected != 0 && wait_recv == 1){
+					
+	    if( (numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1, 0, (struct sockaddr*) &their_addr, &addrlen)) == -1){
+	      perror("recvfrom");
+	      exit(1);
+	    }
+					
+	  }
+	  timer = ((long double)(clock() - t)/CLOCKS_PER_SEC);
+	  printf("%Lf\n",timer);
+	}
+
+	puts("COMMAND ADD");
+	for(int i=0; i<30; i++){
+	  	  t = clock();
+	  sprintf(code,"mc%03d",i);
+	  sprintf(sala,"CB %2d",i);
+	  sprintf(horarios,"10:%2d",i);
+	  sprintf(message,"Message: %2d",i);
+	  sprintf(ementa,"Message: %2d",i);
+
+	  sprintf(buf, "ADD|COD%s|ROM%s|HRS%s|MSG%s|EMT%s", code, sala, horarios, message, ementa);
+	  wait_recv = 1;
+
+	  if(connected != 0){
+	    sendto(sockfd, buf, strlen(buf), 0, p->ai_addr, p->ai_addrlen);
+	  }
+				
+	  if(connected != 0 && wait_recv == 1){
+					
+	    if( (numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1, 0, (struct sockaddr*) &their_addr, &addrlen)) == -1){
+	      perror("recvfrom");
+	      exit(1);
+	    }
+					
+	  }
+	  timer = ((long double)(clock() - t)/CLOCKS_PER_SEC);
+	  printf("%Lf\n",timer);
+	}
+
+	puts("COMMAND DELETE");
+	for(int i=0; i<30; i++){
+	  	  t = clock();
+		  
+	  sprintf(code,"mc%03d",i);
+	  sprintf(buf, "DEL|COD%s",code);
+	  wait_recv = 1;
+
+	  if(connected != 0){
+	    sendto(sockfd, buf, strlen(buf), 0, p->ai_addr, p->ai_addrlen);
+	  }
+				
+	  if(connected != 0 && wait_recv == 1){
+					
+	    if( (numbytes = recvfrom(sockfd, buf, MAXDATASIZE-1, 0, (struct sockaddr*) &their_addr, &addrlen)) == -1){
+	      perror("recvfrom");
+	      exit(1);
+	    }
+					
+	  }
+	  timer = ((long double)(clock() - t)/CLOCKS_PER_SEC);
+	  printf("%Lf\n",timer);
+	}
+	
+	/* disconnect */
+	connected = 0;
+      }
     }
 		
-    if(numbytes == 0){
-      close(sockfd);
-      exit(0);
-    }
-
-    buf[numbytes-1] = '\0';
-
-    /* printf("%s\n",buf); */
-
-
-    /* AUTOMATIZAÇÃO */
-    if (send(sockfd, "professor\n", strlen("professor\n"), 0) == -1)
-      perror("send");
-
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-      perror("recv");
-      exit(1);
-    }
-		
-    if(numbytes == 0){
-      close(sockfd);
-      exit(0);
-    }
-
-    buf[numbytes-1] = '\0';
-
-    /* list */
-    puts("COMMAND: [list]:");
-    for(int i=0; i<30; i++){
-      t = clock();
-      if (send(sockfd, "list\n", strlen("lista\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      if (send(sockfd, "\n", strlen("\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      t = clock() - t;
-      list[i] = ((double)t)/CLOCKS_PER_SEC;
-    }
-
-
-    for(int i=0; i<30; i++){
-      printf("%f\n",list[i]);
-    }
-
-    /* change */
-    puts("COMMAND: [change]:");
-    for(int i=0; i<30; i++){
-      t = clock();
-      if (send(sockfd, "change\n", strlen("change\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      if (send(sockfd, "MC833\n", strlen("MC833\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      if (send(sockfd, "Essa é a nova mensagem\n", strlen("Essa é a nova mensagem\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      if (send(sockfd, "\n", strlen("\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-      
-
-      t = clock() - t;
-      change[i] = ((double)t)/CLOCKS_PER_SEC;
-    }
-
-
-    for(int i=0; i<30; i++){
-      printf("%f\n",change[i]);
-    }
-
-
-
-    /* add */
-    puts("COMMAND: [add]:");
-    for(int i=0; i<30; i++){
-      t = clock();
-      /* add */
-      if (send(sockfd, "add\n", strlen("add\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      /* code */
-      if (send(sockfd, "MC833\n", strlen("MC833\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-      buf[numbytes-1] = '\0';
-
-      /* sala */
-      if (send(sockfd, "CB08\n", strlen("CB08\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-      buf[numbytes-1] = '\0';
-
-      /* horario */
-      if (send(sockfd, "ter qui 17h\n", strlen("ter qui 17h\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-      buf[numbytes-1] = '\0';
-
-      /* msg */
-      if (send(sockfd, "mensagem SHOW\n", strlen("mensagem SHOW\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-      buf[numbytes-1] = '\0';
-
-       /* enter */
-      if (send(sockfd, "\n", strlen("\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-      buf[numbytes-1] = '\0';
-
-      
-      
-
-      t = clock() - t;
-      add[i] = ((double)t)/CLOCKS_PER_SEC;
-    }
-
-
-    for(int i=0; i<30; i++){
-      printf("%f\n",add[i]);
-    }
-
-
-     /* delete */
-    puts("COMMAND: [delete]:");
-    for(int i=0; i<30; i++){
-      t = clock();
-      if (send(sockfd, "delete\n", strlen("delete\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      if (send(sockfd, "MC833\n", strlen("MC833\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-
-      if (send(sockfd, "\n", strlen("\n"), 0) == -1)
-	perror("send");
-
-      if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-	perror("recv");
-	exit(1);
-      }
-		
-      if(numbytes == 0){
-	close(sockfd);
-	exit(0);
-      }
-
-      buf[numbytes-1] = '\0';
-      
-
-      t = clock() - t;
-      delete[i] = ((double)t)/CLOCKS_PER_SEC;
-    }
-
-
-    for(int i=0; i<30; i++){
-      printf("%f\n",delete[i]);
-    }
-
-
-
-    if (send(sockfd, "exit\n", strlen("exit\n"), 0) == -1)
-      perror("send");
-
-    ///////////////////////////////////////		
-    /* printf(": "); */
-    /* fgets(msg, MAXDATASIZE,stdin); */
-		
-    /* //msg[strlen(msg) - 1] = '\0'; */
-
-    /* if (send(sockfd, msg, strlen(msg), 0) == -1) */
-    /*   perror("send"); */
-
-    /* buf[numbytes] = '\0'; */
-
-    /* printf("client: received '%s'\n",buf);	 */
-		
-  }
+  }while(connected == 1 || connected == 2);
+	
+  freeaddrinfo(servinfo);
+	
+  close(sockfd);
 
   return 0;
 }

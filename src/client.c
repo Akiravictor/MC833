@@ -1,30 +1,4 @@
-/* libs */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <netdb.h>
-#include <errno.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <time.h>
-
-/* Custom libs */
-#include "../headers/client.h"
-#include "../headers/server.h"
-#include "../headers/disciplinas.h"
-
-#define ADDR "localhost"
-#define PORT "54321"
-#define QUEUE 10
-#define MAXDATASIZE 2048
-
-#define TRUE 1
-#define FALSE 0
+#include "includes.h"
 
 int main(int argc, char *argv[])
 {
